@@ -3,21 +3,18 @@ const { runFridayCampaign } = require("./smsService");
 const logger = require("./loggerService");
 
 
-
-const PROD_CRON = "0 10 * * 5";
-const TEST_MINS = parseFloat(process.env.CAMPAIGN_INTERVAL_MINUTES ?? "5");
+const PROD_CRON = "*/30 * * * *";
+const TEST_CRON = "* * * * *";
 
 let job       = null;
-let interval  = null;
-let isRunning = false; 
+let isRunning = false;
 
 const runCampaign = async () => {
   if (isRunning) {
-    logger.warn("Scheduler: campaign already in progress — skipping this tick.");
+    logger.warn("Scheduler: already running — skipping tick.");
     return;
   }
   isRunning = true;
-  logger.info("Scheduler triggered: running SMS campaign...");
   try {
     await runFridayCampaign();
   } catch (err) {
@@ -28,26 +25,28 @@ const runCampaign = async () => {
 };
 
 const startScheduler = () => {
-  const testMode = process.env.TEST_MODE === "true";
-  const timezone = process.env.CRON_TIMEZONE || "Africa/Lagos";
+  const testMode     = process.env.TEST_MODE === "true";
+  const timezone     = process.env.CRON_TIMEZONE || "Africa/Lagos";
+  const intervalMins = parseFloat(process.env.CAMPAIGN_INTERVAL_MINUTES ?? (testMode ? "5" : "10080"));
+  const expression   = testMode ? TEST_CRON : PROD_CRON;
+  const modeLabel    = testMode
+    ? `TEST — checking every 1 min, sending every ${intervalMins} min`
+    : `PRODUCTION — checking every 30 min, sending every 7 days`;
 
-  if (testMode) {
-    const ms = TEST_MINS * 60 * 1000;
-    logger.info(`Scheduler: TEST MODE — every ${TEST_MINS} min. Running now...`);
-    runCampaign();
-    interval = setInterval(runCampaign, ms);
-  } else {
-    logger.info(`Scheduler: PRODUCTION MODE — Friday 10:00 AM (TZ: ${timezone})`);
-    job = cron.schedule(PROD_CRON, runCampaign, { scheduled: true, timezone });
-  }
+  logger.info(`Scheduler: ${modeLabel}`);
+  logger.info(`Scheduler: timezone → ${timezone}`);
 
-  logger.info("Scheduler: SMS campaign job is active.");
+  job = cron.schedule(expression, runCampaign, { scheduled: true, timezone });
+
+  logger.info("Scheduler: active ✅");
 };
 
 const stopScheduler = () => {
-  if (interval) { clearInterval(interval); interval = null; }
-  if (job)      { job.stop(); job = null; }
-  logger.info("Scheduler: stopped.");
+  if (job) {
+    job.stop();
+    job = null;
+    logger.info("Scheduler: stopped.");
+  }
 };
 
 const triggerManually = async () => {

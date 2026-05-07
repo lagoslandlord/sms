@@ -65,7 +65,8 @@ const isClientEligible = (client) => {
   const minutesElapsed =
     (Date.now() - new Date(c.lastSentAt).getTime()) / (1000 * 60);
 
-  return minutesElapsed >= 5;
+  const requiredMins = parseFloat(process.env.CAMPAIGN_INTERVAL_MINUTES ?? "5");
+  return minutesElapsed >= requiredMins;
 };
 
 
