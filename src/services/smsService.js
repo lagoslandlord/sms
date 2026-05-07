@@ -70,8 +70,8 @@ const isClientEligible = (client) => {
 
 
 const sendWithConcurrency = async (clients, limit) => {
-  const executing = [];
   const results = [];
+  const executing = new Set();
 
   for (const client of clients) {
     if (!isClientEligible(client)) {
@@ -79,21 +79,19 @@ const sendWithConcurrency = async (clients, limit) => {
       continue;
     }
 
-    const promise = sendMessageToClient(client).then((res) => {
-      executing.splice(executing.indexOf(promise), 1);
-      return res;
-    });
+    const p = sendMessageToClient(client).finally(() => executing.delete(p));
+    executing.add(p);
+    results.push(p);
 
-    executing.push(promise);
-    results.push(promise);
-
-    if (executing.length >= limit) {
+    if (executing.size >= limit) {
       await Promise.race(executing);
     }
   }
 
-  const resolved = await Promise.all(results);
-  return resolved;
+  // Wait for all in-flight sends to finish
+  return Promise.all(
+    results.map((r) => (r instanceof Promise ? r : Promise.resolve(r)))
+  );
 };
 
 
