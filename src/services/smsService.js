@@ -9,31 +9,31 @@ const SMS_SEQUENCES = [
     index: 0,
     label: "Step 1 - Welcome Back",
     message:
-      "Hi {{name}}! It's Harmony Garden - we've missed you! Browse our properties & services anytime at https://www.landbookbyharmony.com/ Ready to reconnect? Reply BOOK or call us. Reply STOP to opt out.",
+      "Hi {{name}}! It's Harmony Garden - we've missed you! Browse our properties & services anytime at https://www.landbookbyharmony.com/ Ready to reconnect? Reply BOOK or call us.",
   },
   {
     index: 1,
     label: "Step 2 - Exclusive Offer",
     message:
-      "Hey {{name}}! Harmony Garden here. As a returning client, you qualify for an exclusive 15% discount on your next booking this month. Explore what's available: https://www.landbookbyharmony.com/ Just mention this message when you reach out. Reply STOP to opt out.",
+      "Hey {{name}}! Harmony Garden here. As a returning client, you qualify for an exclusive 15% discount on your next booking this month. Explore what's available: https://www.landbookbyharmony.com/ Just mention this message when you reach out.",
   },
   {
     index: 2,
     label: "Step 3 - New Listings",
     message:
-      "Hi {{name}}! Big news from Harmony Garden - we've just added exciting new listings and packages we think you'll love. Take a look: https://www.landbookbyharmony.com/ Reply BOOK or call us to learn more. Reply STOP to opt out.",
+      "Hi {{name}}! Big news from Harmony Garden - we've just added exciting new listings and packages we think you'll love. Take a look: https://www.landbookbyharmony.com/ Reply BOOK or call us to learn more.",
   },
   {
     index: 3,
     label: "Step 4 - Referral Reward",
     message:
-      "{{name}}, you're one of our most valued clients! Did you know every friend you refer earns you a FREE add-on? Share the love - have them visit https://www.landbookbyharmony.com/ and mention your name when they book. Reply STOP to opt out.",
+      "{{name}}, you're one of our most valued clients! Did you know every friend you refer earns you a FREE add-on? Share the love - have them visit https://www.landbookbyharmony.com/ and mention your name when they book.",
   },
   {
     index: 4,
     label: "Step 5 - Final Nudge",
     message:
-      "Hi {{name}}, this is our final note from Harmony Garden. We hope to see you again - book anytime and enjoy a complimentary consultation. https://www.landbookbyharmony.com/ Reply STOP to opt out.",
+      "Hi {{name}}, this is our final note from Harmony Garden. We hope to see you again - book anytime and enjoy a complimentary consultation. https://www.landbookbyharmony.com/.",
   },
 ];
 
