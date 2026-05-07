@@ -9,11 +9,7 @@ const logger = require("../services/loggerService");
 
 const router = express.Router();
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CLIENTS
-// ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/clients — list all clients
 router.get("/clients", async (req, res) => {
   try {
     const clients = await Client.find().sort({ createdAt: -1 });
@@ -23,8 +19,7 @@ router.get("/clients", async (req, res) => {
   }
 });
 
-// POST /api/clients — add a new client
-// Body: { name, phone, email?, tags?, notes? }
+
 router.post("/clients", async (req, res) => {
   try {
     const { name, phone, email, tags, notes } = req.body;
@@ -45,8 +40,7 @@ router.post("/clients", async (req, res) => {
   }
 });
 
-// PATCH /api/clients/:id/enroll — re-enroll (optionally reset sequence)
-// Body: { resetSequence?: boolean }
+
 router.patch("/clients/:id/enroll", async (req, res) => {
   try {
     const { resetSequence = false } = req.body;
@@ -71,7 +65,7 @@ router.patch("/clients/:id/enroll", async (req, res) => {
   }
 });
 
-// PATCH /api/clients/:id/unenroll — pause a client without deleting them
+
 router.patch("/clients/:id/unenroll", async (req, res) => {
   try {
     const client = await Client.findByIdAndUpdate(
@@ -87,7 +81,7 @@ router.patch("/clients/:id/unenroll", async (req, res) => {
   }
 });
 
-// DELETE /api/clients/:id — remove a client entirely
+
 router.delete("/clients/:id", async (req, res) => {
   try {
     const client = await Client.findByIdAndDelete(req.params.id);
@@ -99,11 +93,7 @@ router.delete("/clients/:id", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CAMPAIGN
-// ─────────────────────────────────────────────────────────────────────────────
 
-// POST /api/campaign/run-now — manually trigger the campaign
 router.post("/campaign/run-now", async (req, res) => {
   try {
     const results = await triggerManually();
@@ -113,13 +103,12 @@ router.post("/campaign/run-now", async (req, res) => {
   }
 });
 
-// GET /api/campaign/sequences — view all configured SMS sequences
+
 router.get("/campaign/sequences", (req, res) => {
   res.json({ success: true, count: SMS_SEQUENCES.length, data: SMS_SEQUENCES });
 });
 
-// GET /api/campaign/logs — view send history
-// Query params: ?limit=50&status=sent|failed|skipped
+
 router.get("/campaign/logs", async (req, res) => {
   try {
     const { limit = 50, status } = req.query;
@@ -135,14 +124,9 @@ router.get("/campaign/logs", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TWILIO WEBHOOK — inbound SMS (handles STOP / opt-outs)
-//
-// Set this URL in your Twilio phone number:
-//   https://yourdomain.com/api/webhook/inbound
-// ─────────────────────────────────────────────────────────────────────────────
+
 router.post("/webhook/inbound", async (req, res) => {
-  // Validate request is genuinely from Twilio in production
+  
   if (process.env.NODE_ENV === "production") {
     const twilioSignature = req.headers["x-twilio-signature"];
     const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
@@ -168,7 +152,7 @@ router.post("/webhook/inbound", async (req, res) => {
     await handleOptOut(from);
   }
 
-  // Empty TwiML response — Twilio's native STOP handling sends its own reply
+ 
   res.set("Content-Type", "text/xml");
   res.send("<Response></Response>");
 });

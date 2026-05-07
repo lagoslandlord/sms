@@ -13,7 +13,7 @@ const logger = createLogger({
     logFormat
   ),
   transports: [
-    // Console output (colorized in dev)
+    
     new transports.Console({
       format: combine(
         colorize(),
@@ -22,7 +22,7 @@ const logger = createLogger({
         logFormat
       ),
     }),
-    // Persistent log files
+    
     new transports.File({ filename: "logs/error.log", level: "error" }),
     new transports.File({ filename: "logs/combined.log" }),
   ],

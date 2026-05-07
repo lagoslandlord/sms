@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const smsLogSchema = new mongoose.Schema(
   {
-    // ── References ────────────────────────────────────────
+    
     clientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Client",
@@ -13,7 +13,7 @@ const smsLogSchema = new mongoose.Schema(
     clientName: { type: String },
     clientPhone: { type: String },
 
-    // ── Message Details ───────────────────────────────────
+  
     sequenceIndex: {
       type: Number,
       required: true,
@@ -28,7 +28,7 @@ const smsLogSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ── Result ────────────────────────────────────────────
+  
     status: {
       type: String,
       enum: ["sent", "failed", "skipped"],

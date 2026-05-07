@@ -3,64 +3,41 @@ const Client = require("../models/Client");
 const SmsLog = require("../models/SmsLog");
 const logger = require("./loggerService");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SMS SEQUENCES
-// Edit these messages freely. Add or remove objects to grow/shrink the campaign.
-// Each object = one Friday send, 7 days apart per client.
-// Use {{name}} as a placeholder — it will be replaced with the client's first name.
-// ─────────────────────────────────────────────────────────────────────────────
+
 const SMS_SEQUENCES = [
   {
     index: 0,
-    label: "Week 1 – Welcome Back",
+    label: "Step 1 - Welcome Back",
     message:
-      "Hi {{name}}! 👋 It's been a while and we miss you at Harmony Garden. " +
-      "We'd love to have you back — reply BOOK to schedule your next visit or " +
-      "call us anytime. Reply STOP to opt out.",
+      "Hi {{name}}! It's Harmony Garden - we've missed you! Browse our properties & services anytime at https://www.landbookbyharmony.com/ Ready to reconnect? Reply BOOK or call us. Reply STOP to opt out.",
   },
   {
     index: 1,
-    label: "Week 2 – Special Offer",
+    label: "Step 2 - Exclusive Offer",
     message:
-      "Hey {{name}}, it's Harmony Garden 🌿 We're offering returning clients " +
-      "15% off any service this month. Mention this text when you book! " +
-      "Call us or reply BOOK. Reply STOP to opt out.",
+      "Hey {{name}}! Harmony Garden here. As a returning client, you qualify for an exclusive 15% discount on your next booking this month. Explore what's available: https://www.landbookbyharmony.com/ Just mention this message when you reach out. Reply STOP to opt out.",
   },
   {
     index: 2,
-    label: "Week 3 – New Services",
+    label: "Step 3 - New Listings",
     message:
-      "Hi {{name}}! Harmony Garden here 🌸 We've added exciting new treatments " +
-      "we think you'll love. Ask us about our new aromatherapy and deep-tissue " +
-      "packages. Reply BOOK or call us. Reply STOP to opt out.",
+      "Hi {{name}}! Big news from Harmony Garden - we've just added exciting new listings and packages we think you'll love. Take a look: https://www.landbookbyharmony.com/ Reply BOOK or call us to learn more. Reply STOP to opt out.",
   },
   {
     index: 3,
-    label: "Week 4 – Referral Incentive",
+    label: "Step 4 - Referral Reward",
     message:
-      "{{name}}, thanks for being a valued client 💚 Did you know you earn a " +
-      "FREE add-on for every friend you refer to Harmony Garden? Just have them " +
-      "mention your name. Reply STOP to opt out.",
+      "{{name}}, you're one of our most valued clients! Did you know every friend you refer earns you a FREE add-on? Share the love - have them visit https://www.landbookbyharmony.com/ and mention your name when they book. Reply STOP to opt out.",
   },
   {
     index: 4,
-    label: "Week 5 – Final Nudge",
+    label: "Step 5 - Final Nudge",
     message:
-      "Hi {{name}}, this is your last message from Harmony Garden 🌺 We'd love " +
-      "to see you again — book anytime and enjoy a complimentary consultation. " +
-      "Call us or reply BOOK. We hope to see you soon! Reply STOP to opt out.",
+      "Hi {{name}}, this is our final note from Harmony Garden. We hope to see you again - book anytime and enjoy a complimentary consultation. https://www.landbookbyharmony.com/ Reply STOP to opt out.",
   },
-  // ── ADD MORE SEQUENCES BELOW ──────────────────────────────────────────────
-  // {
-  //   index: 5,
-  //   label: "Week 6 – ...",
-  //   message: "Hi {{name}}, ...",
-  // },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Twilio client (lazy-init so tests can load the module without credentials)
-// ─────────────────────────────────────────────────────────────────────────────
+
 let twilioClient;
 
 const getTwilioClient = () => {
@@ -73,50 +50,64 @@ const getTwilioClient = () => {
   return twilioClient;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Replace {{name}} with the client's first name (or full name if single word).
- */
 const personalise = (template, client) => {
-  const firstName = client.name.split(" ")[0];
+  const firstName = client?.name?.split(" ")[0] || "there";
   return template.replace(/\{\{name\}\}/gi, firstName);
 };
 
-/**
- * Returns true if this client is ready to receive their next message.
- * Rules:
- *  - enrolled in campaign
- *  - not opted out
- *  - not completed
- *  - has never been sent OR last send was ≥ 7 days ago
- */
 const isClientEligible = (client) => {
   const c = client.campaign;
+
   if (!c.enrolled || c.optedOut || c.completed) return false;
   if (!c.lastSentAt) return true;
 
-  const msElapsed = Date.now() - new Date(c.lastSentAt).getTime();
-  const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
-  return daysElapsed >= 7;
+  const minutesElapsed =
+    (Date.now() - new Date(c.lastSentAt).getTime()) / (1000 * 60);
+
+  return minutesElapsed >= 5;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Core: send a single message to a single client
-// ─────────────────────────────────────────────────────────────────────────────
+
+const sendWithConcurrency = async (clients, limit) => {
+  const executing = [];
+  const results = [];
+
+  for (const client of clients) {
+    if (!isClientEligible(client)) {
+      results.push({ status: "skipped", client: client.name });
+      continue;
+    }
+
+    const promise = sendMessageToClient(client).then((res) => {
+      executing.splice(executing.indexOf(promise), 1);
+      return res;
+    });
+
+    executing.push(promise);
+    results.push(promise);
+
+    if (executing.length >= limit) {
+      await Promise.race(executing);
+    }
+  }
+
+  const resolved = await Promise.all(results);
+  return resolved;
+};
+
+
 const sendMessageToClient = async (client) => {
   const sequenceIndex = client.campaign.nextSequenceIndex;
   const sequence = SMS_SEQUENCES[sequenceIndex];
 
-  // No more sequences left for this client
   if (!sequence) {
     await Client.findByIdAndUpdate(client._id, {
       "campaign.completed": true,
       "campaign.enrolled": false,
     });
-    logger.info(`[COMPLETED] ${client.name} (${client.phone}) has finished all sequences.`);
+
+    logger.info(`[COMPLETED] ${client.name} (${client.phone})`);
     return { status: "completed", client: client.name };
   }
 
@@ -129,17 +120,15 @@ const sendMessageToClient = async (client) => {
       to: client.phone,
     });
 
-    // Advance the client's sequence pointer
-    const isLastSequence = sequenceIndex >= SMS_SEQUENCES.length - 1;
+    const isLast = sequenceIndex >= SMS_SEQUENCES.length - 1;
 
     await Client.findByIdAndUpdate(client._id, {
       "campaign.nextSequenceIndex": sequenceIndex + 1,
       "campaign.lastSentAt": new Date(),
-      "campaign.completed": isLastSequence,
-      "campaign.enrolled": !isLastSequence,
+      "campaign.completed": isLast,
+      "campaign.enrolled": !isLast,
     });
 
-    // Log success
     await SmsLog.create({
       clientId: client._id,
       clientName: client.name,
@@ -153,12 +142,11 @@ const sendMessageToClient = async (client) => {
     });
 
     logger.info(
-      `[SENT] ${client.name} (${client.phone}) | Seq ${sequenceIndex} "${sequence.label}" | SID: ${message.sid}`
+      `[SENT] ${client.name} | Seq ${sequenceIndex} | SID: ${message.sid}`
     );
 
-    return { status: "sent", client: client.name, sid: message.sid };
+    return { status: "sent", client: client.name };
   } catch (err) {
-    // Log failure but don't crash the whole run
     await SmsLog.create({
       clientId: client._id,
       clientName: client.name,
@@ -172,62 +160,43 @@ const sendMessageToClient = async (client) => {
       sentAt: new Date(),
     });
 
-    logger.error(
-      `[FAILED] ${client.name} (${client.phone}) | Seq ${sequenceIndex} | ${err.message}`
-    );
+    logger.error(`[FAILED] ${client.name} | ${err.message}`);
 
-    return { status: "failed", client: client.name, error: err.message };
+    return { status: "failed", client: client.name };
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Core: run the full Friday campaign pass
-// ─────────────────────────────────────────────────────────────────────────────
-const runFridayCampaign = async () => {
-  logger.info("═══════════════════════════════════════════════");
-  logger.info("  Friday SMS Campaign — Starting Run");
-  logger.info("═══════════════════════════════════════════════");
 
-  // Fetch all potentially eligible clients in one query
+const runFridayCampaign = async () => {
+  logger.info("══════════ Friday SMS Campaign Start ══════════");
+
   const candidates = await Client.find({
     "campaign.enrolled": true,
     "campaign.completed": false,
     "campaign.optedOut": false,
   });
 
-  logger.info(`Found ${candidates.length} enrolled client(s) to evaluate.`);
+  logger.info(`Found ${candidates.length} clients`);
+
+  const limit = parseInt(process.env.SMS_CONCURRENCY_LIMIT || "10");
+
+  const outcomes = await sendWithConcurrency(candidates, limit);
 
   const results = { sent: 0, skipped: 0, failed: 0, completed: 0 };
 
-  for (const client of candidates) {
-    if (!isClientEligible(client)) {
-      logger.debug(
-        `[SKIPPED] ${client.name} — last sent ${client.campaign.lastSentAt?.toDateString() ?? "never"}, not yet 7 days.`
-      );
-      results.skipped++;
-      continue;
-    }
+  outcomes.forEach((o) => {
+    if (!o) return results.skipped++;
+    results[o.status] = (results[o.status] || 0) + 1;
+  });
 
-    const result = await sendMessageToClient(client);
-
-    if (result.status === "sent") results.sent++;
-    else if (result.status === "failed") results.failed++;
-    else if (result.status === "completed") results.completed++;
-
-    // Small delay between sends to respect Twilio rate limits
-    await new Promise((r) => setTimeout(r, 200));
-  }
-
-  logger.info("─────────────────────────────────────────────");
-  logger.info(`  Run Complete: ${results.sent} sent | ${results.skipped} skipped | ${results.failed} failed | ${results.completed} completed`);
-  logger.info("═══════════════════════════════════════════════");
+  logger.info(
+    `Done: ${results.sent} sent | ${results.skipped} skipped | ${results.failed} failed | ${results.completed} completed`
+  );
 
   return results;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Handle inbound STOP / opt-out replies from Twilio webhook
-// ─────────────────────────────────────────────────────────────────────────────
+
 const handleOptOut = async (phone) => {
   const client = await Client.findOneAndUpdate(
     { phone },
@@ -240,9 +209,9 @@ const handleOptOut = async (phone) => {
   );
 
   if (client) {
-    logger.info(`[OPT-OUT] ${client.name} (${phone}) has opted out.`);
+    logger.info(`[OPT-OUT] ${client.name} (${phone})`);
   } else {
-    logger.warn(`[OPT-OUT] Received STOP from unknown number: ${phone}`);
+    logger.warn(`[OPT-OUT] Unknown number: ${phone}`);
   }
 
   return client;
