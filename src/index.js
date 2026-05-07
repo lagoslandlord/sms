@@ -15,6 +15,15 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", routes);
 
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "SMS API is running",
+    health: "/health",
+    api: "/api"
+  });
+});
+
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

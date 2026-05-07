@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const clientSchema = new mongoose.Schema(
   {
-    // ── Identity ──────────────────────────────────────────
+   
     name: {
       type: String,
       required: [true, "Client name is required"],
@@ -14,7 +14,7 @@ const clientSchema = new mongoose.Schema(
       required: [true, "Phone number is required"],
       unique: true,
       trim: true,
-      // Must be in E.164 format: +12345678901
+    
       match: [/^\+[1-9]\d{7,14}$/, "Phone must be in E.164 format e.g. +12345678901"],
     },
 
@@ -24,14 +24,14 @@ const clientSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    // ── Campaign State ────────────────────────────────────
+   
     campaign: {
       enrolled: {
         type: Boolean,
         default: true,
       },
 
-      // Index of the NEXT sequence to send (0-based)
+    
       nextSequenceIndex: {
         type: Number,
         default: 0,
@@ -64,7 +64,7 @@ const clientSchema = new mongoose.Schema(
       },
     },
 
-    // ── Optional Metadata ─────────────────────────────────
+    
     tags: [{ type: String, trim: true }],
 
     notes: {
@@ -77,7 +77,7 @@ const clientSchema = new mongoose.Schema(
   }
 );
 
-// Index for fast campaign queries
+
 clientSchema.index({
   "campaign.enrolled": 1,
   "campaign.completed": 1,
