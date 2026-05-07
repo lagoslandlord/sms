@@ -3,7 +3,6 @@ const Client = require("../models/Client");
 const SmsLog = require("../models/SmsLog");
 const logger = require("./loggerService");
 
-
 const SMS_SEQUENCES = [
   {
     index: 0,
@@ -37,7 +36,6 @@ const SMS_SEQUENCES = [
   },
 ];
 
-
 let twilioClient;
 
 const getTwilioClient = () => {
@@ -49,7 +47,6 @@ const getTwilioClient = () => {
   }
   return twilioClient;
 };
-
 
 const personalise = (template, client) => {
   const firstName = client?.name?.split(" ")[0] || "there";
@@ -68,7 +65,6 @@ const isClientEligible = (client) => {
   const requiredMins = parseFloat(process.env.CAMPAIGN_INTERVAL_MINUTES ?? "5");
   return minutesElapsed >= requiredMins;
 };
-
 
 const sendWithConcurrency = async (clients, limit) => {
   const results = [];
@@ -89,12 +85,10 @@ const sendWithConcurrency = async (clients, limit) => {
     }
   }
 
-  // Wait for all in-flight sends to finish
   return Promise.all(
     results.map((r) => (r instanceof Promise ? r : Promise.resolve(r)))
   );
 };
-
 
 const sendMessageToClient = async (client) => {
   const sequenceIndex = client.campaign.nextSequenceIndex;
@@ -115,7 +109,7 @@ const sendMessageToClient = async (client) => {
   try {
     const message = await getTwilioClient().messages.create({
       body,
-      from: process.env.TWILIO_PHONE_NUMBER,
+      messagingServiceSid: process.env.TWILIO_SENDER_ID,
       to: client.phone,
     });
 
@@ -165,7 +159,6 @@ const sendMessageToClient = async (client) => {
   }
 };
 
-
 const runFridayCampaign = async () => {
   logger.info("══════════ Friday SMS Campaign Start ══════════");
 
@@ -178,9 +171,7 @@ const runFridayCampaign = async () => {
   logger.info(`Found ${candidates.length} clients`);
 
   const limit = parseInt(process.env.SMS_CONCURRENCY_LIMIT || "10");
-
   const outcomes = await sendWithConcurrency(candidates, limit);
-
   const results = { sent: 0, skipped: 0, failed: 0, completed: 0 };
 
   outcomes.forEach((o) => {
@@ -194,7 +185,6 @@ const runFridayCampaign = async () => {
 
   return results;
 };
-
 
 const handleOptOut = async (phone) => {
   const client = await Client.findOneAndUpdate(

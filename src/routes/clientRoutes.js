@@ -157,7 +157,7 @@ router.post("/webhook/inbound", async (req, res) => {
   res.send("<Response></Response>");
 });
 
-// RESET ENTIRE CAMPAIGN FOR ALL CLIENTS
+
 router.post("/campaign/reset-all", async (req, res) => {
   try {
     const result = await Client.updateMany(
