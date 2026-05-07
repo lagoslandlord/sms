@@ -157,4 +157,35 @@ router.post("/webhook/inbound", async (req, res) => {
   res.send("<Response></Response>");
 });
 
+// RESET ENTIRE CAMPAIGN FOR ALL CLIENTS
+router.post("/campaign/reset-all", async (req, res) => {
+  try {
+    const result = await Client.updateMany(
+      {},
+      {
+        $set: {
+          "campaign.enrolled": true,
+          "campaign.completed": false,
+          "campaign.optedOut": false,
+          "campaign.nextSequenceIndex": 0,
+          "campaign.lastSentAt": null,
+          "campaign.optedOutAt": null,
+        },
+      }
+    );
+
+    logger.info(`Campaign reset for ${result.modifiedCount} client(s).`);
+
+    res.json({
+      success: true,
+      message: `Reset ${result.modifiedCount} client(s) to sequence start.`,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
 module.exports = router;
