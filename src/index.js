@@ -57,30 +57,23 @@ app.get("/track", async (req, res) => {
     const now = new Date();
 
     await ClickLog.findOneAndUpdate(
-      { destinationType },
+      { destinationType },  // ✅ Now matches schema
       {
         $inc: { clicks: 1 },
         $set: {
           lastClickedAt: now,
-          sequenceLabel:
-            destinationType === 0
-              ? "Inspection Link"
-              : "ITMS Link",
+          sequenceLabel: destinationType === 0 ? "Inspection Link" : "ITMS Link",
           destinationUrl: destination,
         },
         $setOnInsert: {
           firstClickedAt: now,
+          destinationType,  // ✅ Required for upsert
         },
       },
-      {
-        upsert: true,
-        new: true,
-      }
+      { upsert: true, new: true }
     );
 
-    logger.info(
-      `[TRACK] Destination ${destinationType} clicked`
-    );
+    logger.info(`[TRACK] Destination ${destinationType} clicked`);
   } catch (err) {
     logger.error(`[TRACK] DB error: ${err.message}`);
   }
