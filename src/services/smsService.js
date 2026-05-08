@@ -56,13 +56,13 @@ const SMS_SEQUENCES = [
     index: 8,
     label: "SMS 9 - 10% Entry Offer",
     message:
-      "Start your ITMS: ibile.ng/jQEHZ home journey with just 10%. Request details today: sales@landbookbyharmony.com.",
+      "Start your ITMS: ibile.ng/jQEHZ home journey with just 10%. Request details today: mailto:sales@landbookbyharmony.com.",
   },
   {
     index: 9,
     label: "SMS 10 - 30% Allocation Stage",
     message:
-      "At 30% on ITMS: ibile.ng/jQEHZ, you qualify for allocation. Request your breakdown today: sales@landbookbyharmony.com.",
+      "At 30% on ITMS: ibile.ng/jQEHZ, you qualify for allocation. Request your breakdown today: mailto:sales@landbookbyharmony.com.",
   },
   {
     index: 10,
@@ -104,13 +104,13 @@ const SMS_SEQUENCES = [
     index: 16,
     label: "SMS 17 - Land Conversion",
     message:
-      "You may be able to convert your land into a home opportunity through ITMS: ibile.ng/jQEHZ. Email: sales@landbookbyharmony.com to get started.",
+      "You may be able to convert your land into a home opportunity through ITMS: ibile.ng/jQEHZ. Email: mailto:sales@landbookbyharmony.com to get started.",
   },
   {
     index: 17,
     label: "SMS 18 - Urgency Message",
     message:
-      "Waiting may cost more later. Review your land-to-home conversion now. Email sales@landbookbyharmony.com today. ITMS: ibile.ng/jQEHZ.",
+      "Waiting may cost more later. Review your land-to-home conversion now. Email today: mailto:sales@landbookbyharmony.com. ITMS: ibile.ng/jQEHZ.",
   },
   {
     index: 18,
@@ -146,12 +146,17 @@ const SMS_SEQUENCES = [
     index: 23,
     label: "SMS 24 - Final Invitation",
     message:
-      "Harmony Garden invitation: Move from landowner to homeowner with ITMS: ibile.ng/jQEHZ. Email us today: sales@landbookbyharmony.com.",
+      "Harmony Garden invitation: Move from landowner to homeowner with ITMS: ibile.ng/jQEHZ. Email us today: mailto:sales@landbookbyharmony.com.",
   },
 ];
 
 
-const TRACKABLE_URLS = ["ibile.ng/jQEHZ", "ibile.ng/35Vkw"];
+const DESTINATION_URLS = {
+  0: "https://ibile.ng/35Vkw",
+  1: "https://ibile.ng/jQEHZ",
+};
+
+const FALLBACK_URL = "https://ibile.ng/jQEHZ";
 
 let twilioClient;
 
@@ -171,24 +176,26 @@ const personalise = (template, client) => {
 };
 
 
-const injectTrackingLink = (body, logId) => {
+const injectTrackingLink = (body) => {
   const baseUrl =
     process.env.RENDER_EXTERNAL_URL || "https://sms-gu7t.onrender.com";
 
   let modifiedBody = body;
-  let originalUrl = null;
 
-  for (const url of TRACKABLE_URLS) {
+  for (const [url, type] of Object.entries({
+    "ibile.ng/35Vkw": 0,
+    "ibile.ng/jQEHZ": 1,
+  })) {
     if (body.includes(url)) {
-      originalUrl = url;
-      const trackingUrl = `${baseUrl}/track?id=${logId}`;
+      const trackingUrl = `${baseUrl}/track?type=${type}`;
       modifiedBody = body.replace(url, trackingUrl);
-      break; 
+      break;
     }
   }
 
-  return { modifiedBody, originalUrl };
+  return { modifiedBody };
 };
+
 
 const isClientEligible = (client) => {
   const c = client.campaign;
@@ -205,6 +212,7 @@ const isClientEligible = (client) => {
 
   return minutesElapsed >= requiredMins;
 };
+
 
 const sendMessageToClient = async (client) => {
   try {
@@ -223,36 +231,23 @@ const sendMessageToClient = async (client) => {
 
     const personalisedBody = personalise(sequence.message, client);
 
-   
+    const { modifiedBody } = injectTrackingLink(personalisedBody);
+
     const log = await SmsLog.create({
       clientId: client._id,
       clientName: client.name,
       clientPhone: client.phone,
       sequenceIndex,
       sequenceLabel: sequence.label,
-      body: personalisedBody, 
+      body: modifiedBody,
       status: "sent",
       sentAt: new Date(),
     });
 
-    
-    const { modifiedBody, originalUrl } = injectTrackingLink(
-      personalisedBody,
-      log._id
-    );
-
-    
-    await SmsLog.findByIdAndUpdate(log._id, {
-      body: modifiedBody,
-      originalUrl,
-    });
-
-    
     const message = await getTwilioClient().messages.create({
       body: modifiedBody,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: client.phone,
-     
       statusCallback: `${
         process.env.RENDER_EXTERNAL_URL || "https://sms-gu7t.onrender.com"
       }/api/webhook/delivery`,
@@ -267,7 +262,6 @@ const sendMessageToClient = async (client) => {
       "campaign.enrolled": !isLast,
     });
 
-   
     await SmsLog.findByIdAndUpdate(log._id, {
       twilioSid: message.sid,
       twilioStatus: message.status,
@@ -299,6 +293,7 @@ const sendMessageToClient = async (client) => {
   }
 };
 
+
 const sendWithConcurrency = async (clients, limit) => {
   const executing = new Set();
   const results = [];
@@ -309,7 +304,9 @@ const sendWithConcurrency = async (clients, limit) => {
       continue;
     }
 
-    const p = sendMessageToClient(client).finally(() => executing.delete(p));
+    const p = sendMessageToClient(client).finally(() =>
+      executing.delete(p)
+    );
 
     executing.add(p);
     results.push(p);
@@ -321,6 +318,7 @@ const sendWithConcurrency = async (clients, limit) => {
 
   return Promise.all(results);
 };
+
 
 const runFridayCampaign = async () => {
   logger.info("══════════ Friday SMS Campaign Start ══════════");
@@ -351,6 +349,7 @@ const runFridayCampaign = async () => {
   return results;
 };
 
+
 const handleOptOut = async (phone) => {
   const client = await Client.findOneAndUpdate(
     { phone },
@@ -370,6 +369,7 @@ const handleOptOut = async (phone) => {
 
   return client;
 };
+
 
 module.exports = {
   SMS_SEQUENCES,
