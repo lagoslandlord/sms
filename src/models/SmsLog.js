@@ -26,12 +26,6 @@ const smsLogSchema = new mongoose.Schema(
       required: true,
     },
 
-   
-    originalUrl: {
-      type: String,
-      default: null,
-    },
-
     status: {
       type: String,
       enum: ["sent", "failed", "skipped"],
@@ -58,7 +52,6 @@ const smsLogSchema = new mongoose.Schema(
       default: Date.now,
     },
 
-    
     delivered: {
       type: Boolean,
       default: false,
@@ -71,23 +64,7 @@ const smsLogSchema = new mongoose.Schema(
 
     twilioStatus: {
       type: String,
-      default: null, 
-    },
-
-    
-    linkClicked: {
-      type: Boolean,
-      default: false,
-    },
-
-    linkClickedAt: {
-      type: Date,
       default: null,
-    },
-
-    linkClickCount: {
-      type: Number,
-      default: 0,
     },
   },
   {
