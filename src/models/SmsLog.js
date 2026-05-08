@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const smsLogSchema = new mongoose.Schema(
   {
-    
     clientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Client",
@@ -13,7 +12,6 @@ const smsLogSchema = new mongoose.Schema(
     clientName: { type: String },
     clientPhone: { type: String },
 
-  
     sequenceIndex: {
       type: Number,
       required: true,
@@ -28,7 +26,12 @@ const smsLogSchema = new mongoose.Schema(
       required: true,
     },
 
-  
+   
+    originalUrl: {
+      type: String,
+      default: null,
+    },
+
     status: {
       type: String,
       enum: ["sent", "failed", "skipped"],
@@ -53,6 +56,38 @@ const smsLogSchema = new mongoose.Schema(
     sentAt: {
       type: Date,
       default: Date.now,
+    },
+
+    
+    delivered: {
+      type: Boolean,
+      default: false,
+    },
+
+    deliveredAt: {
+      type: Date,
+      default: null,
+    },
+
+    twilioStatus: {
+      type: String,
+      default: null, 
+    },
+
+    
+    linkClicked: {
+      type: Boolean,
+      default: false,
+    },
+
+    linkClickedAt: {
+      type: Date,
+      default: null,
+    },
+
+    linkClickCount: {
+      type: Number,
+      default: 0,
     },
   },
   {

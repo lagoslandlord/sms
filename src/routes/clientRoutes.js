@@ -10,6 +10,7 @@ const logger = require("../services/loggerService");
 const router = express.Router();
 
 
+
 router.get("/clients", async (req, res) => {
   try {
     const clients = await Client.find().sort({ createdAt: -1 });
@@ -19,13 +20,14 @@ router.get("/clients", async (req, res) => {
   }
 });
 
-
 router.post("/clients", async (req, res) => {
   try {
     const { name, phone, email, tags, notes } = req.body;
 
     if (!name || !phone) {
-      return res.status(400).json({ success: false, error: "name and phone are required." });
+      return res
+        .status(400)
+        .json({ success: false, error: "name and phone are required." });
     }
 
     const client = await Client.create({ name, phone, email, tags, notes });
@@ -34,12 +36,13 @@ router.post("/clients", async (req, res) => {
     res.status(201).json({ success: true, data: client });
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(409).json({ success: false, error: "Phone number already exists." });
+      return res
+        .status(409)
+        .json({ success: false, error: "Phone number already exists." });
     }
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 router.patch("/clients/:id/enroll", async (req, res) => {
   try {
@@ -56,15 +59,19 @@ router.patch("/clients/:id/enroll", async (req, res) => {
       update["campaign.lastSentAt"] = null;
     }
 
-    const client = await Client.findByIdAndUpdate(req.params.id, update, { new: true });
-    if (!client) return res.status(404).json({ success: false, error: "Client not found." });
+    const client = await Client.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+    });
+    if (!client)
+      return res
+        .status(404)
+        .json({ success: false, error: "Client not found." });
 
     res.json({ success: true, data: client });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 router.patch("/clients/:id/unenroll", async (req, res) => {
   try {
@@ -73,7 +80,10 @@ router.patch("/clients/:id/unenroll", async (req, res) => {
       { "campaign.enrolled": false },
       { new: true }
     );
-    if (!client) return res.status(404).json({ success: false, error: "Client not found." });
+    if (!client)
+      return res
+        .status(404)
+        .json({ success: false, error: "Client not found." });
 
     res.json({ success: true, data: client });
   } catch (err) {
@@ -81,17 +91,20 @@ router.patch("/clients/:id/unenroll", async (req, res) => {
   }
 });
 
-
 router.delete("/clients/:id", async (req, res) => {
   try {
     const client = await Client.findByIdAndDelete(req.params.id);
-    if (!client) return res.status(404).json({ success: false, error: "Client not found." });
+    if (!client)
+      return res
+        .status(404)
+        .json({ success: false, error: "Client not found." });
 
     res.json({ success: true, message: `${client.name} deleted.` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 
 router.post("/campaign/run-now", async (req, res) => {
@@ -103,20 +116,59 @@ router.post("/campaign/run-now", async (req, res) => {
   }
 });
 
-
 router.get("/campaign/sequences", (req, res) => {
-  res.json({ success: true, count: SMS_SEQUENCES.length, data: SMS_SEQUENCES });
+  res.json({
+    success: true,
+    count: SMS_SEQUENCES.length,
+    data: SMS_SEQUENCES,
+  });
 });
 
 
 router.get("/campaign/logs", async (req, res) => {
   try {
-    const { limit = 50, status } = req.query;
-    const filter = status ? { status } : {};
+    const {
+      limit = 100,
+      status,
+      delivered,
+      linkClicked,
+      from,
+      to,
+      dayOfWeek, 
+      sequenceIndex,
+      search,
+    } = req.query;
 
-    const logs = await SmsLog.find(filter)
+    const filter = {};
+
+    if (status) filter.status = status;
+    if (delivered !== undefined) filter.delivered = delivered === "true";
+    if (linkClicked !== undefined) filter.linkClicked = linkClicked === "true";
+    if (sequenceIndex !== undefined)
+      filter.sequenceIndex = parseInt(sequenceIndex);
+
+    if (from || to) {
+      filter.sentAt = {};
+      if (from) filter.sentAt.$gte = new Date(from);
+      if (to) filter.sentAt.$lte = new Date(to);
+    }
+
+    if (search) {
+      filter.$or = [
+        { clientName: { $regex: search, $options: "i" } },
+        { clientPhone: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    let logs = await SmsLog.find(filter)
       .sort({ sentAt: -1 })
       .limit(parseInt(limit));
+
+    
+    if (dayOfWeek !== undefined) {
+      const day = parseInt(dayOfWeek);
+      logs = logs.filter((log) => new Date(log.sentAt).getDay() === day);
+    }
 
     res.json({ success: true, count: logs.length, data: logs });
   } catch (err) {
@@ -125,37 +177,79 @@ router.get("/campaign/logs", async (req, res) => {
 });
 
 
-router.post("/webhook/inbound", async (req, res) => {
+
+router.get("/campaign/stats", async (req, res) => {
+  try {
+    const [
+      totalSent,
+      totalFailed,
+      totalDelivered,
+      totalLinkClicked,
+      totalContacts,
+      activeContacts,
+      completedContacts,
+      optedOutContacts,
+    ] = await Promise.all([
+      SmsLog.countDocuments({ status: "sent" }),
+      SmsLog.countDocuments({ status: "failed" }),
+      SmsLog.countDocuments({ status: "sent", delivered: true }),
+      SmsLog.countDocuments({ status: "sent", linkClicked: true }),
+      Client.countDocuments({}),
+      Client.countDocuments({ "campaign.enrolled": true }),
+      Client.countDocuments({ "campaign.completed": true }),
+      Client.countDocuments({ "campaign.optedOut": true }),
+    ]);
+
   
-  if (process.env.NODE_ENV === "production") {
-    const twilioSignature = req.headers["x-twilio-signature"];
-    const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
-    const isValid = twilio.validateRequest(
-      process.env.TWILIO_AUTH_TOKEN,
-      twilioSignature,
-      url,
-      req.body
-    );
-
-    if (!isValid) {
-      logger.warn("Webhook: invalid Twilio signature — request rejected.");
-      return res.status(403).send("Forbidden");
-    }
-  }
-
-  const from = req.body.From;
-  const body = (req.body.Body || "").trim().toUpperCase();
-
-  logger.info(`Inbound SMS from ${from}: "${body}"`);
-
-  if (["STOP", "UNSUBSCRIBE", "CANCEL", "QUIT"].includes(body)) {
-    await handleOptOut(from);
-  }
+    const uniqueDeliveredContacts = await SmsLog.distinct("clientId", {
+      status: "sent",
+      delivered: true,
+    });
 
  
-  res.set("Content-Type", "text/xml");
-  res.send("<Response></Response>");
+    const uniqueClickedContacts = await SmsLog.distinct("clientId", {
+      status: "sent",
+      linkClicked: true,
+    });
+
+  
+    const allSentLogs = await SmsLog.find({ status: "sent" }, { sentAt: 1, delivered: 1, linkClicked: 1 });
+    const fridayLogs = allSentLogs.filter(
+      (log) => new Date(log.sentAt).getDay() === 5
+    );
+    const fridaySent = fridayLogs.length;
+    const fridayDelivered = fridayLogs.filter((l) => l.delivered).length;
+    const fridayClicked = fridayLogs.filter((l) => l.linkClicked).length;
+
+    res.json({
+      success: true,
+      data: {
+        messages: {
+          sent: totalSent,
+          failed: totalFailed,
+          delivered: totalDelivered,
+          linkClicked: totalLinkClicked,
+        },
+        contacts: {
+          total: totalContacts,
+          active: activeContacts,
+          completed: completedContacts,
+          optedOut: optedOutContacts,
+          uniqueDelivered: uniqueDeliveredContacts.length,
+          uniqueClicked: uniqueClickedContacts.length,
+        },
+        friday: {
+          sent: fridaySent,
+          delivered: fridayDelivered,
+          clicked: fridayClicked,
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
+
 
 
 router.post("/campaign/reset-all", async (req, res) => {
@@ -181,11 +275,68 @@ router.post("/campaign/reset-all", async (req, res) => {
       message: `Reset ${result.modifiedCount} client(s) to sequence start.`,
     });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message,
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
+});
+
+
+
+router.post("/webhook/delivery", async (req, res) => {
+  try {
+    const { MessageSid, MessageStatus } = req.body;
+
+    if (!MessageSid) {
+      return res.status(400).send("Missing MessageSid");
+    }
+
+    logger.info(`[DELIVERY] SID: ${MessageSid} | Status: ${MessageStatus}`);
+
+    const update = { twilioStatus: MessageStatus };
+
+    if (MessageStatus === "delivered") {
+      update.delivered = true;
+      update.deliveredAt = new Date();
+    }
+
+    await SmsLog.findOneAndUpdate({ twilioSid: MessageSid }, update);
+
+    res.status(200).send("OK");
+  } catch (err) {
+    logger.error(`Delivery webhook error: ${err.message}`);
+    res.status(500).send("Error");
+  }
+});
+
+
+
+router.post("/webhook/inbound", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    const twilioSignature = req.headers["x-twilio-signature"];
+    const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    const isValid = twilio.validateRequest(
+      process.env.TWILIO_AUTH_TOKEN,
+      twilioSignature,
+      url,
+      req.body
+    );
+
+    if (!isValid) {
+      logger.warn("Webhook: invalid Twilio signature — request rejected.");
+      return res.status(403).send("Forbidden");
+    }
+  }
+
+  const from = req.body.From;
+  const body = (req.body.Body || "").trim().toUpperCase();
+
+  logger.info(`Inbound SMS from ${from}: "${body}"`);
+
+  if (["STOP", "UNSUBSCRIBE", "CANCEL", "QUIT"].includes(body)) {
+    await handleOptOut(from);
+  }
+
+  res.set("Content-Type", "text/xml");
+  res.send("<Response></Response>");
 });
 
 module.exports = router;
