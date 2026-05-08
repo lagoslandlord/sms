@@ -6,33 +6,147 @@ const logger = require("./loggerService");
 const SMS_SEQUENCES = [
   {
     index: 0,
-    label: "Step 1 - Welcome Back",
+    label: "SMS 1 - Land Appreciation",
     message:
-      "Hi {{name}}! It's Harmony Garden - we've missed you! Browse our properties & services anytime at https://www.landbookbyharmony.com/ Ready to reconnect? Reply BOOK or call us.",
+      "Hello {{name}}, your land investment in Harmony Garden has appreciated! A bigger Ibile mortgage offer awaits returning clients. Book inspection: ibile.ng/35Vkw.",
   },
   {
     index: 1,
-    label: "Step 2 - Exclusive Offer",
+    label: "SMS 2 - Housing Opportunity",
     message:
-      "Hey {{name}}! Harmony Garden here. As a returning client, you qualify for an exclusive 15% discount on your next booking this month. Explore what's available: https://www.landbookbyharmony.com/ Just mention this message when you reach out.",
+      "Harmony delivers value. Your investment is proof, {{name}}. Housing opportunity is coming for returning clients. Learn more: ibile.ng/jQEHZ.",
   },
   {
     index: 2,
-    label: "Step 3 - New Listings",
+    label: "SMS 3 - Early Investors",
     message:
-      "Hi {{name}}! Big news from Harmony Garden - we've just added exciting new listings and packages we think you'll love. Take a look: https://www.landbookbyharmony.com/ Reply BOOK or call us to learn more.",
+      "Early investors always win, {{name}}. You did. Ibile is a strategic Homeownership System Made Easy: ibile.ng/jQEHZ. Harmony Garden.",
   },
   {
     index: 3,
-    label: "Step 4 - Referral Reward",
+    label: "SMS 4 - Land to Home",
     message:
-      "{{name}}, you're one of our most valued clients! Did you know every friend you refer earns you a FREE add-on? Share the love - have them visit https://www.landbookbyharmony.com/ and mention your name when they book.",
+      "{{name}}, your land has grown. Ready for the next level? Barter your land for Home Ownership Made Easy with Harmony Garden: ibile.ng/jQEHZ.",
   },
   {
     index: 4,
-    label: "Step 5 - Final Nudge",
+    label: "SMS 5 - Introducing ITMS",
     message:
-      "Hi {{name}}, this is our final note from Harmony Garden. We hope to see you again - book anytime and enjoy a complimentary consultation. https://www.landbookbyharmony.com/.",
+      "Introducing ITMS: ibile.ng/jQEHZ, a smarter and more flexible way to own a home with Harmony Garden. Check your email for details, {{name}}.",
+  },
+  {
+    index: 5,
+    label: "SMS 6 - Own a Home",
+    message:
+      "{{name}}, you’ve owned land. Now own a home. ITMS: ibile.ng/jQEHZ is your next smart move with Harmony Garden.",
+  },
+  {
+    index: 6,
+    label: "SMS 7 - Flexible Ownership",
+    message:
+      "ITMS: ibile.ng/jQEHZ is built to make homeownership easier and more flexible. More details are in your email, {{name}}.",
+  },
+  {
+    index: 7,
+    label: "SMS 8 - Returning Clients",
+    message:
+      "ITMS: ibile.ng/jQEHZ was designed for serious returning clients ready for the next property step. Details are in your email, {{name}}.",
+  },
+  {
+    index: 8,
+    label: "SMS 9 - Start with 10%",
+    message:
+      "{{name}}, start your ITMS: ibile.ng/jQEHZ home journey with just 10%. Request details today: sales@landbookbyharmony.com.",
+  },
+  {
+    index: 9,
+    label: "SMS 10 - Allocation Stage",
+    message:
+      "At 30% on ITMS: ibile.ng/jQEHZ, you qualify for allocation. Request your breakdown today, {{name}}: sales@landbookbyharmony.com.",
+  },
+  {
+    index: 10,
+    label: "SMS 11 - Move-In Stage",
+    message:
+      "{{name}}, move closer to homeownership with ITMS. 50% gets you to the move-in stage. Learn more today: ibile.ng/jQEHZ.",
+  },
+  {
+    index: 11,
+    label: "SMS 12 - ITMS Advantage",
+    message:
+      "10% start. 30% allocation. 50% move-in. That’s the ITMS advantage: ibile.ng/jQEHZ. Request the full guide today, {{name}}.",
+  },
+  {
+    index: 12,
+    label: "SMS 13 - Terrace + BQ",
+    message:
+      "{{name}}, own a 3- or 4-bedroom terrace + BQ through ITMS: ibile.ng/jQEHZ. Request a brochure and details today.",
+  },
+  {
+    index: 13,
+    label: "SMS 14 - Asake Cottage",
+    message:
+      "Asake Cottage is now available on ITMS: ibile.ng/jQEHZ. Explore 3, 4 & 5-bedroom options today, {{name}}.",
+  },
+  {
+    index: 14,
+    label: "SMS 15 - GranVille Cinema Duplex",
+    message:
+      "GranVille Cinema Duplex is available on ITMS: ibile.ng/jQEHZ. Premium living starts here. Request details today, {{name}}.",
+  },
+  {
+    index: 15,
+    label: "SMS 16 - Choose Your Home",
+    message:
+      "{{name}}, Terrace, Asake Cottage Duplex, or GranVille Cinema Duplex, choose the ITMS home that fits you best today: ibile.ng/jQEHZ.",
+  },
+  {
+    index: 16,
+    label: "SMS 17 - Land Conversion",
+    message:
+      "{{name}}, you may be able to convert your land into a home opportunity through ITMS: ibile.ng/jQEHZ. Email sales@landbookbyharmony.com to get started.",
+  },
+  {
+    index: 17,
+    label: "SMS 18 - Review Conversion",
+    message:
+      "Waiting may cost more later, {{name}}. Review your land-to-home conversion now. Email sales@landbookbyharmony.com today. ITMS: ibile.ng/jQEHZ.",
+  },
+  {
+    index: 18,
+    label: "SMS 19 - Physical Inspection",
+    message:
+      "{{name}}, book your physical inspection now: ibile.ng/35Vkw. Come in person or send a trusted relative.",
+  },
+  {
+    index: 19,
+    label: "SMS 20 - Beyond Land",
+    message:
+      "Many returning clients are now moving beyond land into homeownership. ITMS can help you too, {{name}}: ibile.ng/jQEHZ.",
+  },
+  {
+    index: 20,
+    label: "SMS 21 - Timing Matters",
+    message:
+      "Timing still matters in real estate, {{name}}. Get started today on your ITMS homeownership journey: ibile.ng/jQEHZ.",
+  },
+  {
+    index: 21,
+    label: "SMS 22 - Returning Client Advantage",
+    message:
+      "Returning clients have an advantage, {{name}}, but timing matters. Begin your ITMS or conversion review now: ibile.ng/jQEHZ.",
+  },
+  {
+    index: 22,
+    label: "SMS 23 - Review Options",
+    message:
+      "{{name}}, your land has grown, but it may still do more for you. Review ITMS and conversion options today: ibile.ng/jQEHZ.",
+  },
+  {
+    index: 23,
+    label: "SMS 24 - Final Invitation",
+    message:
+      "Harmony Garden invitation: Move from landowner to homeowner with ITMS: ibile.ng/jQEHZ. Email us today, {{name}}: sales@landbookbyharmony.com.",
   },
 ];
 
