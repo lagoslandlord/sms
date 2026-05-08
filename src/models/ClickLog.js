@@ -54,7 +54,7 @@ const mongoose = require("mongoose");
 
 const clickLogSchema = new mongoose.Schema(
   {
-    // Match the query field from /track endpoint
+   
     destinationType: {
       type: Number,
       required: true,
