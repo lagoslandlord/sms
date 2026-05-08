@@ -223,7 +223,7 @@ const sendMessageToClient = async (client) => {
   try {
     const message = await getTwilioClient().messages.create({
       body,
-      messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+      messagingServiceSid: process.env.TWILIO_PHONE_NUMBER,
       to: client.phone,
     });
 
