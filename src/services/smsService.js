@@ -176,24 +176,28 @@ const personalise = (template, client) => {
 };
 
 
+// const injectTrackingLink = (body) => {
+//   const baseUrl =
+//     process.env.RENDER_EXTERNAL_URL || "https://sms-gu7t.onrender.com";
+
+//   let modifiedBody = body;
+
+//   for (const [url, type] of Object.entries({
+//     "ibile.ng/35Vkw": 0,
+//     "ibile.ng/jQEHZ": 1,
+//   })) {
+//     if (body.includes(url)) {
+//       const trackingUrl = `${baseUrl}/track?type=${type}`;
+//       modifiedBody = body.replace(url, trackingUrl);
+//       break;
+//     }
+//   }
+
+//   return { modifiedBody };
+// };
+
 const injectTrackingLink = (body) => {
-  const baseUrl =
-    process.env.RENDER_EXTERNAL_URL || "https://sms-gu7t.onrender.com";
-
-  let modifiedBody = body;
-
-  for (const [url, type] of Object.entries({
-    "ibile.ng/35Vkw": 0,
-    "ibile.ng/jQEHZ": 1,
-  })) {
-    if (body.includes(url)) {
-      const trackingUrl = `${baseUrl}/track?type=${type}`;
-      modifiedBody = body.replace(url, trackingUrl);
-      break;
-    }
-  }
-
-  return { modifiedBody };
+  return { modifiedBody: body };
 };
 
 
