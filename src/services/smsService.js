@@ -8,7 +8,7 @@ const SMS_SEQUENCES = [
     index: 0,
     label: "SMS 1 - Land Appreciation",
     message:
-      "Hello, client! Your land investment in Harmony Garden has appreciated! A bigger Ibile mortgage offer awaits returning clients. Book inspection: ibile.ng/5cHtO.",
+      "Hello, client! Your land investment in Harmony Garden has appreciated! A bigger Ibile mortgage offer awaits returning clients. Book inspection:  ibile.ng/35Vkw.",
   },
   {
     index: 1,
@@ -20,19 +20,19 @@ const SMS_SEQUENCES = [
     index: 2,
     label: "SMS 3 - Strategic Ownership",
     message:
-      "Early investors always win. You did. Ibile is a strategic Homeownership System made easy: ibile.ng/nHQUt. Harmony Garden.",
+      "Early investors always win. You did. Ibile is a strategic Homeownership System made easy: ibile.ng/jQEHZ. Harmony Garden.",
   },
   {
     index: 3,
     label: "SMS 4 - Upgrade Opportunity",
     message:
-      "Your land has grown. Ready for the next level? Barter your land for Home Ownership Made Easy with Harmony Garden: ibile.ng/nHQUt.",
+      "Your land has grown. Ready for the next level? Barter your land for Home Ownership Made Easy with Harmony Garden: ibile.ng/jQEHZ.",
   },
   {
     index: 4,
     label: "SMS 5 - ITMS Introduction",
     message:
-      "Introducing ITMS: ibile.ng/nHQUt, a smarter, more flexible way to own a home with Harmony Garden. Check your email for details.",
+      "Introducing ITMS: ibile.ng/jQEHZ., a smarter, more flexible way to own a home with Harmony Garden. Check your email for details.",
   },
   {
     index: 5,
@@ -56,97 +56,97 @@ const SMS_SEQUENCES = [
     index: 8,
     label: "SMS 9 - 10% Entry Offer",
     message:
-      "Start your ITMS: ibile.ng/nHQUt home journey with just 10%. Request details today: mailto:sales@landbookbyharmony.com.",
+      "Start your ITMS: ibile.ng/jQEHZ. home journey with just 10%. Request details today: mailto:sales@landbookbyharmony.com.",
   },
   {
     index: 9,
     label: "SMS 10 - 30% Allocation Stage",
     message:
-      "At 30% on ITMS: ibile.ng/nHQUt, you qualify for allocation. Request your breakdown today: mailto:sales@landbookbyharmony.com.",
+      "At 30% on ITMS: ibile.ng/jQEHZ., you qualify for allocation. Request your breakdown today: mailto:sales@landbookbyharmony.com.",
   },
   {
     index: 10,
     label: "SMS 11 - Move-in Progress",
     message:
-      "Move closer to homeownership with ITMS. 50% gets you to the move-in stage. Learn more: ibile.ng/nHQUt.",
+      "Move closer to homeownership with ITMS. 50% gets you to the move-in stage. Learn more: ibile.ng/jQEHZ.",
   },
   {
     index: 11,
     label: "SMS 12 - ITMS Breakdown",
     message:
-      "10% start. 30% allocation. 50% move-in. That's the ITMS advantage: ibile.ng/nHQUt. Request the full guide today.",
+      "10% start. 30% allocation. 50% move-in. That's the ITMS advantage: ibile.ng/jQEHZ. Request the full guide today.",
   },
   {
     index: 12,
     label: "SMS 13 - Home Options",
     message:
-      "Own a 3- or 4-bedroom terrace + BQ through ITMS: ibile.ng/nHQUt. Request a brochure and details today.",
+      "Own a 3- or 4-bedroom terrace + BQ through ITMS: ibile.ng/jQEHZ. Request a brochure and details today.",
   },
   {
     index: 13,
     label: "SMS 14 - Asake Cottage",
     message:
-      "Asake Cottage is now available on ITMS: ibile.ng/nHQUt. Explore 3, 4 & 5-bedroom options today.",
+      "Asake Cottage is now available on ITMS: ibile.ng/jQEHZ. Explore 3, 4 & 5-bedroom options today.",
   },
   {
     index: 14,
     label: "SMS 15 - GranVille Cinema Duplex",
     message:
-      "GranVille Cinema Duplex is available on ITMS: ibile.ng/nHQUt. Premium living starts here. Request details today.",
+      "GranVille Cinema Duplex is available on ITMS: ibile.ng/jQEHZ. Premium living starts here. Request details today.",
   },
   {
     index: 15,
     label: "SMS 16 - Choice of Homes",
     message:
-      "Terrace, Asake Cottage Duplex, or GranVille Cinema Duplex; choose the ITMS home that fits you best today: ibile.ng/nHQUt.",
+      "Terrace, Asake Cottage Duplex, or GranVille Cinema Duplex; choose the ITMS home that fits you best today: ibile.ng/jQEHZ.",
   },
   {
     index: 16,
     label: "SMS 17 - Land Conversion",
     message:
-      "You may be able to convert your land into a home opportunity through ITMS: ibile.ng/nHQUt. Email: mailto:sales@landbookbyharmony.com to get started.",
+      "You may be able to convert your land into a home opportunity through ITMS: ibile.ng/jQEHZ. Email: mailto:sales@landbookbyharmony.com to get started.",
   },
   {
     index: 17,
     label: "SMS 18 - Urgency Message",
     message:
-      "Waiting may cost more later. Review your land-to-home conversion now. Email today: mailto:sales@landbookbyharmony.com. ITMS: ibile.ng/nHQUt.",
+      "Waiting may cost more later. Review your land-to-home conversion now. Email today: mailto:sales@landbookbyharmony.com. ITMS: ibile.ng/jQEHZ.",
   },
   {
     index: 18,
     label: "SMS 19 - Inspection Reminder",
     message:
-      "Book your physical inspection now: ibile.ng/5cHtO. Come in person or send a trusted relative.",
+      "Book your physical inspection now: ibile.ng/35Vkw. Come in person or send a trusted relative.",
   },
   {
     index: 19,
     label: "SMS 20 - Upgrade Social Proof",
     message:
-      "Many returning clients are now moving beyond land into homeownership. ITMS can help you too: ibile.ng/nHQUt.",
+      "Many returning clients are now moving beyond land into homeownership. ITMS can help you too: ibile.ng/jQEHZ.",
   },
   {
     index: 20,
     label: "SMS 21 - Timing Message",
     message:
-      "Timing still matters in real estate. Get started today on your ITMS homeownership journey: ibile.ng/nHQUt.",
+      "Timing still matters in real estate. Get started today on your ITMS homeownership journey: ibile.ng/jQEHZ.",
   },
   {
     index: 21,
     label: "SMS 22 - Advantage Reminder",
     message:
-      "Returning clients have an advantage, but timing matters. Begin your ITMS or conversion review now: ibile.ng/nHQUt.",
+      "Returning clients have an advantage, but timing matters. Begin your ITMS or conversion review now: ibile.ng/jQEHZ.",
   },
   {
     index: 22,
     label: "SMS 23 - Reflection Message",
     message:
-      "Your land has grown, but it may still do more for you. Review ITMS and conversion options today: ibile.ng/nHQUt.",
+      "Your land has grown, but it may still do more for you. Review ITMS and conversion options today: ibile.ng/jQEHZ.",
   },
   {
     index: 23,
     label: "SMS 24 - Final Invitation",
     message:
-      "Harmony Garden invitation: Move from landowner to homeowner with ITMS: ibile.ng/nHQUt. Email us today: mailto:sales@landbookbyharmony.com.",
+      "Harmony Garden invitation: Move from landowner to homeowner with ITMS: ibile.ng/jQEHZ. Email us today: mailto:sales@landbookbyharmony.com.",
   },
 ];
 
