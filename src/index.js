@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const { startScheduler, stopScheduler } = require("./services/schedulerService");
 const logger = require("./services/loggerService");
 const routes = require("./routes/clientRoutes");
+const freshsalesRoutes = require("./routes/freshsalesRoutes");
 const ClickLog = require("./models/ClickLog");
 
 const app = express();
@@ -84,6 +85,7 @@ app.get("/track", async (req, res) => {
 
 
 app.use("/api", routes);
+app.use("/api/freshsales", freshsalesRoutes);
 
 app.get("/", (req, res) => {
   res.json({

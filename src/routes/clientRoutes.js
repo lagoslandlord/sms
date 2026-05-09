@@ -1,12 +1,11 @@
 const express = require("express");
-const twilio = require("twilio");
-
 const Client = require("../models/Client");
 const SmsLog = require("../models/SmsLog");
 const { triggerManually } = require("../services/schedulerService");
-const { handleOptOut, SMS_SEQUENCES } = require("../services/smsService");
+const { SMS_SEQUENCES } = require("../services/smsService");
 const logger = require("../services/loggerService");
 const ClickLog = require("../models/ClickLog");
+const { patchFreshsalesContact, FS_FIELDS } = require("./freshsalesRoutes");
 
 const router = express.Router();
 
@@ -311,6 +310,21 @@ router.post("/webhook/delivery", async (req, res) => {
 
     await SmsLog.findOneAndUpdate({ twilioSid: MessageSid }, update);
 
+    
+    if (MessageStatus === "delivered") {
+      const log = await SmsLog.findOne({ twilioSid: MessageSid });
+      if (log) {
+        const client = await Client.findById(log.clientId);
+        const fsTag = client?.tags?.find((t) => t?.startsWith("freshsales:"));
+        if (fsTag) {
+          const fsId = fsTag.split(":")[1];
+          await patchFreshsalesContact(fsId, {
+            [FS_FIELDS.lastSent]: log.sentAt?.toISOString(),
+          });
+        }
+      }
+    }
+
     res.status(200).send("OK");
   } catch (err) {
     logger.error(`Delivery webhook error: ${err.message}`);
@@ -318,36 +332,5 @@ router.post("/webhook/delivery", async (req, res) => {
   }
 });
 
-
-
-router.post("/webhook/inbound", async (req, res) => {
-  if (process.env.NODE_ENV === "production") {
-    const twilioSignature = req.headers["x-twilio-signature"];
-    const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
-    const isValid = twilio.validateRequest(
-      process.env.TWILIO_AUTH_TOKEN,
-      twilioSignature,
-      url,
-      req.body
-    );
-
-    if (!isValid) {
-      logger.warn("Webhook: invalid Twilio signature — request rejected.");
-      return res.status(403).send("Forbidden");
-    }
-  }
-
-  const from = req.body.From;
-  const body = (req.body.Body || "").trim().toUpperCase();
-
-  logger.info(`Inbound SMS from ${from}: "${body}"`);
-
-  if (["STOP", "UNSUBSCRIBE", "CANCEL", "QUIT"].includes(body)) {
-    await handleOptOut(from);
-  }
-
-  res.set("Content-Type", "text/xml");
-  res.send("<Response></Response>");
-});
 
 module.exports = router;

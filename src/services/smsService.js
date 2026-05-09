@@ -2,6 +2,7 @@ const twilio = require("twilio");
 const Client = require("../models/Client");
 const SmsLog = require("../models/SmsLog");
 const logger = require("./loggerService");
+const { patchFreshsalesContact, FS_FIELDS } = require("../routes/freshsalesRoutes");
 
 const SMS_SEQUENCES = [
   {
@@ -177,11 +178,12 @@ const isClientEligible = (client) => {
     (Date.now() - new Date(c.lastSentAt).getTime()) / (1000 * 60);
 
   const requiredMins = parseFloat(
-    process.env.CAMPAIGN_INTERVAL_MINUTES ?? "1"
+    process.env.CAMPAIGN_INTERVAL_MINUTES ?? "5"
   );
 
   return minutesElapsed >= requiredMins;
 };
+
 
 const sendMessageToClient = async (client) => {
   try {
@@ -200,14 +202,13 @@ const sendMessageToClient = async (client) => {
 
     const body = personalise(sequence.message, client);
 
-    // ✅ Create initial log BEFORE sending (for audit trail)
     const log = await SmsLog.create({
       clientId: client._id,
       clientName: client.name,
       clientPhone: client.phone,
       sequenceIndex,
       sequenceLabel: sequence.label,
-      body, // ✅ Always populated from sequence
+      body,
       status: "sent",
       sentAt: new Date(),
     });
@@ -239,15 +240,24 @@ const sendMessageToClient = async (client) => {
       `[SENT] ${client.name} | Seq ${sequenceIndex} | SID: ${message.sid}`
     );
 
+    // ✅ Freshsales sync: update campaign progress in CRM
+    const freshsalesTag = client.tags?.find((t) => t?.startsWith("freshsales:"));
+    if (freshsalesTag) {
+      const freshsalesId = freshsalesTag.split(":")[1];
+      await patchFreshsalesContact(freshsalesId, {
+        [FS_FIELDS.status]: isLast ? "completed" : "enrolled",
+        [FS_FIELDS.sequenceStep]: sequenceIndex + 1,
+        [FS_FIELDS.lastSent]: new Date().toISOString(),
+      });
+    }
+
     return { status: "sent", client: client.name };
   } catch (err) {
     logger.error(`[FAILED] ${client.name} | ${err.message}`);
 
-    // ✅ FIX: Ensure body is NEVER empty for SmsLog validation
     const sequenceIndex = client.campaign?.nextSequenceIndex ?? 0;
     const sequence = SMS_SEQUENCES[sequenceIndex];
-    
-    // Build a meaningful fallback body for error logs
+
     const fallbackBody = sequence
       ? `Failed to send "${sequence.label}": ${err.message}`
       : `Failed to send SMS to ${client.name}: ${err.message}`;
@@ -258,7 +268,7 @@ const sendMessageToClient = async (client) => {
       clientPhone: client.phone,
       sequenceIndex,
       sequenceLabel: sequence?.label || "unknown",
-      body: fallbackBody.trim(), // ✅ Required field - never empty
+      body: fallbackBody.trim(),
       status: "failed",
       errorCode: err.code?.toString() ?? null,
       errorMessage: err.message,
@@ -378,5 +388,4 @@ module.exports = {
   SMS_SEQUENCES,
   runFridayCampaign,
   sendMessageToClient,
-  handleOptOut,
 };
