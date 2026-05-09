@@ -150,14 +150,6 @@ const SMS_SEQUENCES = [
   },
 ];
 
-
-const DESTINATION_URLS = {
-  0: "https://ibile.ng/35Vkw",
-  1: "https://ibile.ng/jQEHZ",
-};
-
-const FALLBACK_URL = "https://ibile.ng/nHQUt";
-
 let twilioClient;
 
 const getTwilioClient = () => {
@@ -175,32 +167,6 @@ const personalise = (template, client) => {
   return template.replace(/\{\{name\}\}/gi, firstName);
 };
 
-
-// const injectTrackingLink = (body) => {
-//   const baseUrl =
-//     process.env.RENDER_EXTERNAL_URL || "https://sms-gu7t.onrender.com";
-
-//   let modifiedBody = body;
-
-//   for (const [url, type] of Object.entries({
-//     "ibile.ng/35Vkw": 0,
-//     "ibile.ng/jQEHZ": 1,
-//   })) {
-//     if (body.includes(url)) {
-//       const trackingUrl = `${baseUrl}/track?type=${type}`;
-//       modifiedBody = body.replace(url, trackingUrl);
-//       break;
-//     }
-//   }
-
-//   return { modifiedBody };
-// };
-
-const injectTrackingLink = (body) => {
-  return { modifiedBody: body };
-};
-
-
 const isClientEligible = (client) => {
   const c = client.campaign;
 
@@ -211,12 +177,11 @@ const isClientEligible = (client) => {
     (Date.now() - new Date(c.lastSentAt).getTime()) / (1000 * 60);
 
   const requiredMins = parseFloat(
-    process.env.CAMPAIGN_INTERVAL_MINUTES ?? "5"
+    process.env.CAMPAIGN_INTERVAL_MINUTES ?? "1"
   );
 
   return minutesElapsed >= requiredMins;
 };
-
 
 const sendMessageToClient = async (client) => {
   try {
@@ -233,9 +198,7 @@ const sendMessageToClient = async (client) => {
       return { status: "completed", client: client.name };
     }
 
-    const personalisedBody = personalise(sequence.message, client);
-
-    const { modifiedBody } = injectTrackingLink(personalisedBody);
+    const body = personalise(sequence.message, client);
 
     const log = await SmsLog.create({
       clientId: client._id,
@@ -243,13 +206,13 @@ const sendMessageToClient = async (client) => {
       clientPhone: client.phone,
       sequenceIndex,
       sequenceLabel: sequence.label,
-      body: modifiedBody,
+      body,
       status: "sent",
       sentAt: new Date(),
     });
 
     const message = await getTwilioClient().messages.create({
-      body: modifiedBody,
+      body,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: client.phone,
       statusCallback: `${
@@ -297,7 +260,6 @@ const sendMessageToClient = async (client) => {
   }
 };
 
-
 const sendWithConcurrency = async (clients, limit) => {
   const executing = new Set();
   const results = [];
@@ -322,7 +284,6 @@ const sendWithConcurrency = async (clients, limit) => {
 
   return Promise.all(results);
 };
-
 
 const runFridayCampaign = async () => {
   logger.info("══════════ Friday SMS Campaign Start ══════════");
@@ -353,7 +314,6 @@ const runFridayCampaign = async () => {
   return results;
 };
 
-
 const handleOptOut = async (phone) => {
   const client = await Client.findOneAndUpdate(
     { phone },
@@ -373,7 +333,6 @@ const handleOptOut = async (phone) => {
 
   return client;
 };
-
 
 module.exports = {
   SMS_SEQUENCES,
