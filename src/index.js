@@ -32,11 +32,11 @@ app.use(express.urlencoded({ extended: true }));
 
 
 const DESTINATION_URLS = {
-  0: "https://ibile.ng/35Vkw",
-  1: "https://ibile.ng/jQEHZ",
+  0: "https://landbookbyharmony.com/inspection",
+  1: "https://landbookbyharmony.com/returning-clients",
 };
 
-const FALLBACK_URL = "https://ibile.ng/jQEHZ";
+const FALLBACK_URL = "https://landbookbyharmony.com/returning-clients";
 
 
 app.get("/track", async (req, res) => {
@@ -80,6 +80,7 @@ app.get("/track", async (req, res) => {
 
   return res.redirect(302, destination);
 });
+
 
 
 app.use("/api", routes);

@@ -6,6 +6,7 @@ const SmsLog = require("../models/SmsLog");
 const { triggerManually } = require("../services/schedulerService");
 const { handleOptOut, SMS_SEQUENCES } = require("../services/smsService");
 const logger = require("../services/loggerService");
+const ClickLog = require("../models/ClickLog");
 
 const router = express.Router();
 
@@ -122,6 +123,16 @@ router.get("/campaign/sequences", (req, res) => {
     count: SMS_SEQUENCES.length,
     data: SMS_SEQUENCES,
   });
+});
+
+router.get("/campaign/clicks", async (req, res) => {
+  try {
+    const clicks = await ClickLog.find().sort({ destinationType: 1 });
+    const total = clicks.reduce((sum, c) => sum + c.clicks, 0);
+    res.json({ success: true, total, data: clicks });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 
