@@ -466,26 +466,61 @@
     }
 
    
-
-    async function syncAndEnroll(id) {
-      showToast("Enrolling contact…");
-      try {
-        const res = await fetch(`${SMS_API}/api/freshsales/enroll/${id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ resetSequence: false }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast("✓ Enrolled successfully");
-          setTimeout(() => loadStatus(id), 1000);
-        } else {
-          showToast("Error: " + (data.error || "Unknown"));
-        }
-      } catch (err) {
-        showToast("Network error: " + err.message);
-      }
+async function syncAndEnroll(id) {
+  showToast("Fetching contact details…");
+  
+  try {
+    // Step 1: Fetch live contact data from Freshsales to get phone number
+    const fsRes = await fetch(`${SMS_API}/api/freshsales/contact-details/${id}`);
+    
+    if (!fsRes.ok) {
+      const errData = await fsRes.json().catch(() => ({}));
+      throw new Error(errData.error || `Freshsales API error: ${fsRes.status}`);
     }
+    
+    const fsData = await fsRes.json();
+    
+    if (!fsData.phone) {
+      showToast("⚠️ No phone number found for this contact");
+      return;
+    }
+
+    showToast("Enrolling contact…");
+    
+    // Step 2: Enroll using the phone number for fallback matching
+    const res = await fetch(`${SMS_API}/api/freshsales/enroll/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        resetSequence: false, 
+        phone: fsData.phone  // Enables phone-based lookup + auto-tagging
+      }),
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      showToast("✓ Enrolled successfully");
+      setTimeout(() => loadStatus(id), 1000);
+    } else {
+      showToast("Error: " + (data.error || "Unknown"));
+    }
+    
+  } catch (err) {
+    console.error("[syncAndEnroll]", err);
+    
+    // Friendly error messages based on common failure modes
+    if (err.message.includes("404")) {
+      showToast("Contact not found in Freshsales");
+    } else if (err.message.includes("401")) {
+      showToast("API authentication failed");
+    } else if (err.message.includes("Network")) {
+      showToast("Connection error — check your internet");
+    } else {
+      showToast("Error: " + err.message);
+    }
+  }
+}
 
     async function enroll(id, reset) {
       showToast(reset ? "Restarting sequence…" : "Resuming campaign…");
