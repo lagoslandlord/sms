@@ -186,13 +186,29 @@ router.get("/status/:freshsalesId", async (req, res) => {
 router.post("/enroll/:freshsalesId", async (req, res) => {
   try {
     const { freshsalesId } = req.params;
-    const { resetSequence = false } = req.body;
+    const { resetSequence = false, phone } = req.body;
 
-    const client = await Client.findOne({ tags: `freshsales:${freshsalesId}` });
+    let client = await Client.findOne({ tags: `freshsales:${freshsalesId}` });
+
+    if (!client && phone) {
+      const normalizedPhone = normalizePhone(phone);
+      client = await Client.findOne({ phone: normalizedPhone });
+
+      if (client) {
+        await Client.findByIdAndUpdate(client._id, {
+          $addToSet: { tags: `freshsales:${freshsalesId}` },
+        });
+        logger.info(`[FS-ENROLL] Auto-tagged existing client ${client.name} with freshsales:${freshsalesId}`);
+      }
+    }
 
     if (!client) {
       return res.status(404).json({
-        error: "Contact not found in SMS system. Use sync-contact first.",
+        error: "Contact not found in SMS system. Try /sync-contact first or provide a valid phone number.",
+        suggestions: [
+          "Ensure the contact was previously synced via /sync-contact",
+          "Or include 'phone' in request body to match by phone number",
+        ],
       });
     }
 
@@ -207,15 +223,23 @@ router.post("/enroll/:freshsalesId", async (req, res) => {
       update["campaign.lastSentAt"] = null;
     }
 
-    await Client.findByIdAndUpdate(client._id, update, { new: true });
+    await Client.findByIdAndUpdate(client._id, update);
 
+   
     await patchFreshsalesContact(freshsalesId, {
       [FS_FIELDS.status]: "enrolled",
       [FS_FIELDS.optedOut]: false,
     });
 
-    res.json({ success: true, message: `${client.name} enrolled in campaign` });
+    logger.info(`[FS-ENROLL] Enrolled client: ${client.name} (${client.phone})`);
+    res.json({ 
+      success: true, 
+      message: `${client.name} enrolled in campaign`,
+      clientId: client._id,
+      phone: client.phone,
+    });
   } catch (err) {
+    logger.error(`[FS-ENROLL] Error: ${err.message}`);
     res.status(500).json({ error: err.message });
   }
 });
@@ -354,6 +378,47 @@ router.get("/test-connection", async (req, res) => {
       error: err.response?.data || err.message,
       status: err.response?.status,
     });
+  }
+});
+
+
+router.get("/contact-details/:freshsalesId", async (req, res) => {
+  try {
+    const { freshsalesId } = req.params;
+
+    if (!process.env.FRESHSALES_API_KEY || !process.env.FRESHSALES_DOMAIN) {
+      return res.status(500).json({ error: "Freshsales credentials not configured" });
+    }
+
+    const response = await axios.get(
+      `${FS_BASE()}/contacts/${freshsalesId}`,
+      { headers: fsHeaders(), timeout: 8000 }
+    );
+
+    const contact = response.data?.contact;
+
+    if (!contact) {
+      return res.status(404).json({ error: "Contact not found in Freshsales" });
+    }
+
+    res.json({
+      id: contact.id,
+      name: [contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Unknown",
+      phone: contact.mobile_number || contact.phone || null,
+      email: contact.email || null,
+      custom_fields: contact.custom_field || {}, // Optional: expose campaign fields
+    });
+  } catch (err) {
+    logger.error(`[FS-CONTACT-DETAILS] Error: ${err.message}`);
+    
+    if (err.response?.status === 404) {
+      return res.status(404).json({ error: "Contact not found in Freshsales" });
+    }
+    if (err.response?.status === 401) {
+      return res.status(401).json({ error: "Invalid Freshsales API credentials" });
+    }
+    
+    res.status(500).json({ error: err.message });
   }
 });
 
