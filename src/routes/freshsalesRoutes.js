@@ -16,21 +16,17 @@ const fsHeaders = () => ({
 });
 
 
-
 const FS_FIELDS = {
   status: "cf_sms_campaign_status",       
   sequenceStep: "cf_sms_sequence_step",   
   lastSent: "cf_sms_last_sent",           
-  linkClicked: "cf_sms_link_clicked",     
+  linkClicked: "cf_sms_link_clicked",    
   optedOut: "cf_sms_opted_out",           
 };
 
 
-
-
 router.post("/sync-contact", async (req, res) => {
   try {
-    
     if (process.env.FRESHSALES_WEBHOOK_SECRET) {
       const incomingSecret = req.headers["x-freshsales-secret"];
       if (incomingSecret !== process.env.FRESHSALES_WEBHOOK_SECRET) {
@@ -55,10 +51,8 @@ router.post("/sync-contact", async (req, res) => {
       return res.status(200).json({ skipped: true, reason: "no_phone" });
     }
 
-   
     const normalizedPhone = normalizePhone(phone);
 
-    
     let client = await Client.findOne({
       $or: [
         { tags: `freshsales:${freshsalesId}` },
@@ -67,7 +61,6 @@ router.post("/sync-contact", async (req, res) => {
     });
 
     if (client) {
-    
       const wasEnrolled = client.campaign.enrolled;
 
       await Client.findByIdAndUpdate(client._id, {
@@ -90,7 +83,6 @@ router.post("/sync-contact", async (req, res) => {
 
       logger.info(`[FS-SYNC] Updated existing client: ${name} (${normalizedPhone})`);
 
-     
       await patchFreshsalesContact(freshsalesId, {
         [FS_FIELDS.status]: wasEnrolled ? "enrolled" : "re_enrolled",
         [FS_FIELDS.sequenceStep]: client.campaign?.nextSequenceIndex ?? 0,
@@ -99,7 +91,6 @@ router.post("/sync-contact", async (req, res) => {
 
       return res.json({ success: true, action: "updated", clientId: client._id });
     } else {
-    
       client = await Client.create({
         name,
         phone: normalizedPhone,
@@ -112,7 +103,6 @@ router.post("/sync-contact", async (req, res) => {
       });
 
       logger.info(`[FS-SYNC] Created new client from Freshsales: ${name} (${normalizedPhone})`);
-
 
       await patchFreshsalesContact(freshsalesId, {
         [FS_FIELDS.status]: "enrolled",
@@ -133,8 +123,6 @@ router.post("/sync-contact", async (req, res) => {
 });
 
 
-
-
 router.get("/status/:freshsalesId", async (req, res) => {
   try {
     const { freshsalesId } = req.params;
@@ -151,7 +139,6 @@ router.get("/status/:freshsalesId", async (req, res) => {
       });
     }
 
-  
     const recentLogs = await SmsLog.find({ clientId: client._id })
       .sort({ sentAt: -1 })
       .limit(5)
@@ -196,7 +183,6 @@ router.get("/status/:freshsalesId", async (req, res) => {
 
 
 
-
 router.post("/enroll/:freshsalesId", async (req, res) => {
   try {
     const { freshsalesId } = req.params;
@@ -233,7 +219,6 @@ router.post("/enroll/:freshsalesId", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 
 
@@ -292,7 +277,6 @@ router.post("/bulk-import", async (req, res) => {
 
 
 
-
 const patchFreshsalesContact = async (freshsalesId, customFields) => {
   if (!process.env.FRESHSALES_API_KEY || !process.env.FRESHSALES_DOMAIN) {
     logger.warn("[FS-PATCH] Freshsales env vars not set — skipping patch");
@@ -307,7 +291,6 @@ const patchFreshsalesContact = async (freshsalesId, customFields) => {
     );
     logger.info(`[FS-PATCH] Updated Freshsales contact ${freshsalesId}`);
   } catch (err) {
-    
     logger.warn(
       `[FS-PATCH] Failed to update Freshsales contact ${freshsalesId}: ${err.message}`
     );
@@ -327,17 +310,12 @@ const normalizePhone = (raw) => {
     return "+234" + phone.slice(1);
   }
 
- 
   if (phone.startsWith("234") && phone.length === 13) {
     return "+" + phone;
   }
 
- 
   return "+" + phone;
 };
-
-
-
 
 router.get("/test-connection", async (req, res) => {
   const domain = process.env.FRESHSALES_DOMAIN;
@@ -368,7 +346,7 @@ router.get("/test-connection", async (req, res) => {
         phone: c.mobile_number || c.phone || null,
         email: c.email || null,
       })),
-      message: `Connected to gloriatech-org.myfreshworks.com`,
+      message: `✅ Connected to gloriatech-org.myfreshworks.com`,
     });
   } catch (err) {
     res.status(500).json({
@@ -378,8 +356,6 @@ router.get("/test-connection", async (req, res) => {
     });
   }
 });
-
-
 
 
 module.exports = router;
