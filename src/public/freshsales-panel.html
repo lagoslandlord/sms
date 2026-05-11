@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMS Campaign Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c10;
+      --surface: #0e1318;
+      --surface2: #141b22;
+      --border: rgba(255,255,255,0.08);
+      --text: #f0f4f8;
+      --text-dim: #7a8fa6;
+      --text-muted: #4a5e72;
+      --green: #00e87a;
+      --green-dim: rgba(0,232,122,0.10);
+      --blue: #4d9fff;
+      --amber: #ffb547;
+      --red: #ff5252;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 14px;
+      min-height: 100vh;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      border: 1px solid transparent;
+    }
+
+    .badge.enrolled   { background: rgba(0,232,122,0.1); color: var(--green); border-color: rgba(0,232,122,0.2); }
+    .badge.completed  { background: rgba(77,159,255,0.1); color: var(--blue); border-color: rgba(77,159,255,0.2); }
+    .badge.opted_out  { background: rgba(255,82,82,0.1); color: var(--red); border-color: rgba(255,82,82,0.2); }
+    .badge.not_found  { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+
+    .progress-wrap {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .progress-label span:first-child {
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .progress-label span:last-child {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--green);
+    }
+
+    .progress-bar-track {
+      height: 5px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), #00b35c);
+      border-radius: 999px;
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 0 10px rgba(0,232,122,0.4);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .stat-card .val {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-card .lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 3px;
+    }
+
+    .stat-card.green .val { color: var(--green); }
+    .stat-card.blue  .val { color: var(--blue); }
+    .stat-card.amber .val { color: var(--amber); }
+
+    .section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin: 10px 0 6px;
+    }
+
+    .log-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 5px;
+    }
+
+    .log-row .log-icon {
+      width: 20px; height: 20px;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .log-row .log-icon.sent      { background: rgba(0,232,122,0.12); color: var(--green); }
+    .log-row .log-icon.failed    { background: rgba(255,82,82,0.12); color: var(--red); }
+    .log-row .log-icon.skipped   { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+
+    .log-row .log-body { flex: 1; min-width: 0; }
+    .log-row .log-label { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-row .log-date  { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+    .log-row .log-tick {
+      font-size: 10px;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .actions { display: flex; gap: 7px; margin-top: 12px; }
+
+    .btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .btn:hover { background: var(--surface); color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+    .btn.primary {
+      background: var(--green-dim, rgba(0,232,122,0.1));
+      color: var(--green);
+      border-color: rgba(0,232,122,0.25);
+    }
+
+    .btn.primary:hover { background: rgba(0,232,122,0.18); }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+    .empty-state p { font-size: 12px; line-height: 1.6; }
+    .empty-state strong { color: var(--text-dim); display: block; margin-bottom: 4px; }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .open-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 12px;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-decoration: none;
+      padding: 7px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .open-link:hover { color: var(--blue); border-color: rgba(77,159,255,0.3); }
+
+    .toast {
+      position: fixed;
+      bottom: 14px; left: 14px; right: 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text);
+      display: none;
+      z-index: 999;
+    }
+    .toast.show { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <div class="panel-header">
+    <div class="panel-title">
+      <div class="dot"></div>
+      SMS Campaign
+    </div>
+    <div id="statusBadge" class="badge not_found">—</div>
+  </div>
+
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      Loading campaign data…
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const SMS_API = "https://sms-gu7t.onrender.com";
+    const DASHBOARD_URL = "https://dashboard-mu-six-62.vercel.app/";
+
+    const params = new URLSearchParams(window.location.search);
+    const freshsalesId = params.get("contact_id") || params.get("id");
+
+ 
+    window.addEventListener("DOMContentLoaded", () => {
+      if (!freshsalesId) {
+        renderNoId();
+      } else {
+        loadStatus(freshsalesId);
+      }
+    });
+
+    async function loadStatus(id) {
+      try {
+        const res = await fetch(`${SMS_API}/api/freshsales/status/${id}`);
+        const data = await res.json();
+
+        if (!data.found) {
+          renderNotEnrolled(id);
+        } else {
+          renderStatus(data);
+        }
+      } catch (err) {
+        renderError(err.message);
+      }
+    }
+
+    function renderStatus(data) {
+      const { client, stats, recentLogs } = data;
+
+      const badge = document.getElementById("statusBadge");
+      if (stats.optedOut) {
+        badge.className = "badge opted_out"; badge.textContent = "Opted Out";
+      } else if (stats.completed) {
+        badge.className = "badge completed"; badge.textContent = "Completed";
+      } else if (stats.enrolled) {
+        badge.className = "badge enrolled"; badge.textContent = "Enrolled";
+      } else {
+        badge.className = "badge not_found"; badge.textContent = "Inactive";
+      }
+
+      const lastSent = stats.lastSentAt
+        ? new Date(stats.lastSentAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+        : "—";
+
+      const html = `
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Sequence Progress</span>
+            <span>${stats.sequenceStep} / ${stats.totalSteps}</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width: ${stats.percentComplete}%"></div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card green">
+            <div class="val">${stats.sequenceStep}</div>
+            <div class="lbl">Messages Sent</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="val">${stats.percentComplete}%</div>
+            <div class="lbl">Complete</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="val">${lastSent}</div>
+            <div class="lbl">Last Sent</div>
+          </div>
+          <div class="stat-card ${stats.linkClicked ? 'green' : ''}">
+            <div class="val">${stats.linkClicked ? '✓' : '—'}</div>
+            <div class="lbl">Link Clicked</div>
+          </div>
+        </div>
+
+        ${recentLogs.length > 0 ? `
+          <div class="section-label">Recent Activity</div>
+          ${recentLogs.map(log => `
+            <div class="log-row">
+              <div class="log-icon ${log.status}">
+                ${log.status === 'sent' ? '✓' : log.status === 'failed' ? '✕' : '–'}
+              </div>
+              <div class="log-body">
+                <div class="log-label">${log.sequenceLabel || 'SMS'}</div>
+                <div class="log-date">${new Date(log.sentAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+              </div>
+              ${log.delivered ? '<div class="log-tick">delivered</div>' : ''}
+            </div>
+          `).join('')}
+        ` : ''}
+
+        <div class="actions">
+          ${!stats.completed && !stats.optedOut && stats.enrolled ? `
+            <button class="btn" onclick="unenroll('${data.freshsalesId}')">Pause</button>
+          ` : ''}
+          ${!stats.enrolled && !stats.completed ? `
+            <button class="btn primary" onclick="enroll('${data.freshsalesId}', false)">Resume</button>
+          ` : ''}
+          ${stats.completed || stats.optedOut ? `
+            <button class="btn primary" onclick="enroll('${data.freshsalesId}', true)">Restart</button>
+          ` : ''}
+          ${stats.enrolled && !stats.completed ? `
+            <button class="btn primary" style="flex: 2;" disabled>Active ✓</button>
+          ` : ''}
+        </div>
+
+        <a class="open-link" href="${DASHBOARD_URL}" target="_blank">
+          ↗ Open Full Dashboard
+        </a>
+      `;
+
+      document.getElementById("content").innerHTML = html;
+    }
+
+    function renderNotEnrolled(id) {
+      document.getElementById("statusBadge").className = "badge not_found";
+      document.getElementById("statusBadge").textContent = "Not Enrolled";
+
+      document.getElementById("content").innerHTML = `
+        <div class="empty-state">
+          <div class="icon"></div>
+          <p><strong>Not enrolled in campaign</strong>
+          This contact hasn't been added to the SMS drip sequence yet.</p>
+        </div>
+        <div class="actions">
+          <button class="btn primary" onclick="syncAndEnroll('${id}')">Enroll in Campaign</button>
+        </div>
+        <a class="open-link" href="${DASHBOARD_URL}" target="_blank">↗ Open Full Dashboard</a>
+      `;
+    }
+
+    function renderNoId() {
+      document.getElementById("content").innerHTML = `
+        <div class="empty-state">
+          <div class="icon">⚙️</div>
+          <p><strong>Setup needed</strong>
+          Add <code>?contact_id={{contact.id}}</code> to the widget URL in Freshsales.</p>
+        </div>
+      `;
+    }
+
+    function renderError(msg) {
+      document.getElementById("content").innerHTML = `
+        <div class="empty-state">
+          <div class="icon">⚠️</div>
+          <p><strong>Connection error</strong>${msg}</p>
+        </div>
+        <a class="open-link" href="${DASHBOARD_URL}" target="_blank">↗ Open Full Dashboard</a>
+      `;
+    }
+
+   
+
+    async function syncAndEnroll(id) {
+      showToast("Enrolling contact…");
+      try {
+        const res = await fetch(`${SMS_API}/api/freshsales/enroll/${id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resetSequence: false }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("✓ Enrolled successfully");
+          setTimeout(() => loadStatus(id), 1000);
+        } else {
+          showToast("Error: " + (data.error || "Unknown"));
+        }
+      } catch (err) {
+        showToast("Network error: " + err.message);
+      }
+    }
+
+    async function enroll(id, reset) {
+      showToast(reset ? "Restarting sequence…" : "Resuming campaign…");
+      try {
+        const res = await fetch(`${SMS_API}/api/freshsales/enroll/${id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resetSequence: reset }),
+        });
+        const data = await res.json();
+        showToast(data.success ? "✓ Done" : "Error: " + data.error);
+        setTimeout(() => loadStatus(id), 1000);
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    async function unenroll(id) {
+      try {
+        const res = await fetch(`${SMS_API}/api/freshsales/status/${id}`);
+        const data = await res.json();
+        if (!data.found) return;
+
+        const r2 = await fetch(`${SMS_API}/api/clients/${data.client.id}/unenroll`, {
+          method: "PATCH",
+        });
+        const d2 = await r2.json();
+        showToast(d2.success ? "Paused campaign" : "Error");
+        setTimeout(() => loadStatus(id), 1000);
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 3000);
+    }
+  </script>
+</body>
+</html>

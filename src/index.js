@@ -1,6 +1,7 @@
 require("dotenv").config({ path: __dirname + "/.env" });
 
 const express = require("express");
+const path = require("path");
 const connectDB = require("./config/db");
 const { startScheduler, stopScheduler } = require("./services/schedulerService");
 const logger = require("./services/loggerService");
@@ -30,6 +31,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "../public")));
 
 
 const DESTINATION_URLS = {
@@ -58,7 +60,7 @@ app.get("/track", async (req, res) => {
     const now = new Date();
 
     await ClickLog.findOneAndUpdate(
-      { destinationType },  // ✅ Now matches schema
+      { destinationType },  
       {
         $inc: { clicks: 1 },
         $set: {
@@ -68,7 +70,7 @@ app.get("/track", async (req, res) => {
         },
         $setOnInsert: {
           firstClickedAt: now,
-          destinationType,  // ✅ Required for upsert
+          destinationType,  
         },
       },
       { upsert: true, new: true }
