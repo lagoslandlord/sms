@@ -423,6 +423,142 @@ router.get("/contact-details/:freshsalesId", async (req, res) => {
 });
 
 
+
+router.post("/send-sequence-sms", async (req, res) => {
+  try {
+    const { contact_id, step } = req.body;
+
+    if (!contact_id) {
+      return res.status(400).json({ error: "contact_id required" });
+    }
+
+    const freshsalesId = String(contact_id);
+
+
+    let client = await Client.findOne({
+      tags: `freshsales:${freshsalesId}`,
+    });
+
+  
+    if (!client) {
+      if (!process.env.FRESHSALES_API_KEY) {
+        return res.status(404).json({ error: "Client not found in SMS system" });
+      }
+
+      const fsRes = await axios.get(
+        `${FS_BASE()}/contacts/${freshsalesId}`,
+        { headers: fsHeaders(), timeout: 8000 }
+      );
+
+      const contact = fsRes.data?.contact;
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found in Freshsales" });
+      }
+
+      const normalizedPhone = normalizePhone(
+        contact.mobile_number || contact.phone
+      );
+
+      if (!normalizedPhone) {
+        return res.status(400).json({ error: "Contact has no phone number" });
+      }
+
+
+      client = await Client.findOne({ phone: normalizedPhone });
+
+      if (client) {
+        await Client.findByIdAndUpdate(client._id, {
+          $addToSet: { tags: `freshsales:${freshsalesId}` },
+        });
+      } else {
+        return res.status(404).json({
+          error: "Client not found in SMS system by tag or phone",
+        });
+      }
+    }
+
+  
+    const sequenceIndex = step ? parseInt(step) - 1 : 
+                          client.campaign?.nextSequenceIndex ?? 0;
+
+    const { SMS_SEQUENCES } = require("../services/smsService");
+    const sequence = SMS_SEQUENCES[sequenceIndex];
+
+    if (!sequence) {
+      return res.status(400).json({ 
+        error: `No SMS sequence found for step ${sequenceIndex + 1}` 
+      });
+    }
+
+    // // Personalise the message
+    // const firstName = client.name?.split(" ")[0] || "there";
+    // const body = sequence.message.replace(/\{\{name\}\}/gi, firstName);
+
+  
+    const twilio = require("twilio");
+    const twilioClient = twilio(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
+
+    const message = await twilioClient.messages.create({
+      body,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: client.phone,
+      statusCallback: `${
+        process.env.RENDER_EXTERNAL_URL || "https://sms-gu7t.onrender.com"
+      }/api/webhook/delivery`,
+    });
+
+   
+    await SmsLog.create({
+      clientId: client._id,
+      clientName: client.name,
+      clientPhone: client.phone,
+      sequenceIndex,
+      sequenceLabel: sequence.label,
+      body,
+      status: "sent",
+      twilioSid: message.sid,
+      twilioStatus: message.status,
+      sentAt: new Date(),
+    });
+
+  
+    const isLast = sequenceIndex >= SMS_SEQUENCES.length - 1;
+    await Client.findByIdAndUpdate(client._id, {
+      "campaign.nextSequenceIndex": sequenceIndex + 1,
+      "campaign.lastSentAt": new Date(),
+      "campaign.completed": isLast,
+      "campaign.enrolled": !isLast,
+    });
+
+   
+    await patchFreshsalesContact(freshsalesId, {
+      [FS_FIELDS.status]: isLast ? "completed" : "enrolled",
+      [FS_FIELDS.sequenceStep]: sequenceIndex + 1,
+      [FS_FIELDS.lastSent]: new Date().toISOString(),
+    });
+
+    logger.info(
+      `[FS-SEQ] Sent SMS ${sequenceIndex + 1}/24 to ${client.name} via Freshsales sequence`
+    );
+
+    res.json({
+      success: true,
+      client: client.name,
+      step: sequenceIndex + 1,
+      message: sequence.label,
+      sid: message.sid,
+    });
+
+  } catch (err) {
+    logger.error(`[FS-SEQ] Error: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;
 module.exports.patchFreshsalesContact = patchFreshsalesContact;
 module.exports.FS_FIELDS = FS_FIELDS;
