@@ -4,7 +4,7 @@ const logger = require("./loggerService");
 
 
 const PROD_CRON = "*/30 * * * *";
-const TEST_CRON = "* * * * *";
+const TEST_CRON = "*/5 * * * *";
 
 let job       = null;
 let isRunning = false;
