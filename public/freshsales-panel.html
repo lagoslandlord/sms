@@ -448,7 +448,7 @@
     function renderNoId() {
       document.getElementById("content").innerHTML = `
         <div class="empty-state">
-          <div class="icon">⚙️</div>
+          <div class="icon"></div>
           <p><strong>Setup needed</strong>
           Add <code>?contact_id={{contact.id}}</code> to the widget URL in Freshsales.</p>
         </div>
@@ -458,7 +458,7 @@
     function renderError(msg) {
       document.getElementById("content").innerHTML = `
         <div class="empty-state">
-          <div class="icon">⚠️</div>
+          <div class="icon"></div>
           <p><strong>Connection error</strong>${msg}</p>
         </div>
         <a class="open-link" href="${DASHBOARD_URL}" target="_blank">↗ Open Full Dashboard</a>
@@ -470,7 +470,6 @@ async function syncAndEnroll(id) {
   showToast("Fetching contact details…");
   
   try {
-    // Step 1: Fetch live contact data from Freshsales to get phone number
     const fsRes = await fetch(`${SMS_API}/api/freshsales/contact-details/${id}`);
     
     if (!fsRes.ok) {
@@ -481,19 +480,19 @@ async function syncAndEnroll(id) {
     const fsData = await fsRes.json();
     
     if (!fsData.phone) {
-      showToast("⚠️ No phone number found for this contact");
+      showToast("No phone number found for this contact");
       return;
     }
 
     showToast("Enrolling contact…");
     
-    // Step 2: Enroll using the phone number for fallback matching
+    
     const res = await fetch(`${SMS_API}/api/freshsales/enroll/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         resetSequence: false, 
-        phone: fsData.phone  // Enables phone-based lookup + auto-tagging
+        phone: fsData.phone  
       }),
     });
     
@@ -509,7 +508,7 @@ async function syncAndEnroll(id) {
   } catch (err) {
     console.error("[syncAndEnroll]", err);
     
-    // Friendly error messages based on common failure modes
+    
     if (err.message.includes("404")) {
       showToast("Contact not found in Freshsales");
     } else if (err.message.includes("401")) {
